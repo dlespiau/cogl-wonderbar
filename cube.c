@@ -71,6 +71,7 @@ paint (ClutterActor *stage,
   CoglFramebuffer *fb;
   int width;
   int height;
+  double progress;
 
   fb = cogl_get_draw_framebuffer ();
   width = cogl_framebuffer_get_width (fb);
@@ -84,6 +85,11 @@ paint (ClutterActor *stage,
   cogl_framebuffer_translate (fb, width / 2, height / 2, 0);
 
   cogl_framebuffer_scale (fb, 75, 75, 75);
+
+
+  progress = clutter_timeline_get_progress (cube->timeline);
+  cogl_framebuffer_rotate (fb, progress * 360, 0, 0, 1);
+  cogl_framebuffer_rotate (fb, progress * 360, 0, 1, 0);
 
   cogl_framebuffer_draw_primitive (fb, cube->pipeline, cube->prim);
 
