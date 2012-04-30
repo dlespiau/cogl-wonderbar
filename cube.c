@@ -13,55 +13,124 @@ typedef struct
   ClutterTimeline *timeline;
 
   CoglContext *context;
-  CoglIndices *indices;
   CoglPrimitive *prim;
   CoglPipeline *pipeline;
 
 } Cube;
 
-/* A cube modelled using 4 vertices for each face.
- *
- * We use an index buffer when drawing the cube later so the GPU will
- * actually read each face as 2 separate triangles.
- */
-static CoglVertexP3T2 vertices[] =
+typedef struct
 {
-  /* Front face */
-  { /* pos = */ -1.0f, -1.0f,  1.0f, /* tex coords = */ 0.0f, 1.0f},
-  { /* pos = */  1.0f, -1.0f,  1.0f, /* tex coords = */ 1.0f, 1.0f},
-  { /* pos = */  1.0f,  1.0f,  1.0f, /* tex coords = */ 1.0f, 0.0f},
-  { /* pos = */ -1.0f,  1.0f,  1.0f, /* tex coords = */ 0.0f, 0.0f},
+  float x, y, z;        /* position       */
+  float n_x, n_y, n_z;  /* normal         */
+} Vertex;
 
-  /* Back face */
-  { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 0.0f},
-  { /* pos = */ -1.0f,  1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f},
-  { /* pos = */  1.0f,  1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f},
-  { /* pos = */  1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 0.0f},
+/*
+ *        f +--------+ e
+ *         /        /|
+ *        /        / |
+ *    b  /      a /  |
+ *      +--------+   |
+ *      |  g     |   + h
+ *      |        |  /
+ *      |        | /
+ *    c |        |/
+ *      +--------+ d
+ */
 
-  /* Top face */
-  { /* pos = */ -1.0f,  1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f},
-  { /* pos = */ -1.0f,  1.0f,  1.0f, /* tex coords = */ 0.0f, 0.0f},
-  { /* pos = */  1.0f,  1.0f,  1.0f, /* tex coords = */ 1.0f, 0.0f},
-  { /* pos = */  1.0f,  1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f},
+#define pos_a        1.0f,  1.0f, 1.0f
+#define pos_b       -1.0f,  1.0f, 1.0f
+#define pos_c       -1.0f, -1.0f, 1.0f
+#define pos_d        1.0f, -1.0f, 1.0f
 
-  /* Bottom face */
-  { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f},
-  { /* pos = */  1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f},
-  { /* pos = */  1.0f, -1.0f,  1.0f, /* tex coords = */ 0.0f, 0.0f},
-  { /* pos = */ -1.0f, -1.0f,  1.0f, /* tex coords = */ 1.0f, 0.0f},
+#define pos_e        1.0f,  1.0f, -1.0f
+#define pos_f       -1.0f,  1.0f, -1.0f
+#define pos_g       -1.0f, -1.0f, -1.0f
+#define pos_h        1.0f, -1.0f, -1.0f
 
-  /* Right face */
-  { /* pos = */ 1.0f, -1.0f, -1.0f, /* tex coords = */ 1.0f, 0.0f},
-  { /* pos = */ 1.0f,  1.0f, -1.0f, /* tex coords = */ 1.0f, 1.0f},
-  { /* pos = */ 1.0f,  1.0f,  1.0f, /* tex coords = */ 0.0f, 1.0f},
-  { /* pos = */ 1.0f, -1.0f,  1.0f, /* tex coords = */ 0.0f, 0.0f},
+#define norm_front   0.0f,  0.0f,  1.0f
+#define norm_right   1.0f,  0.0f,  0.0f
+#define norm_back    0.0f,  0.0f, -1.0f
+#define norm_left   -1.0f,  0.0f,  0.0f
+#define norm_top     0.0f,  1.0f,  0.0f
+#define norm_bottom  0.0f, -1.0f,  0.0f
 
-  /* Left face */
-  { /* pos = */ -1.0f, -1.0f, -1.0f, /* tex coords = */ 0.0f, 0.0f},
-  { /* pos = */ -1.0f, -1.0f,  1.0f, /* tex coords = */ 1.0f, 0.0f},
-  { /* pos = */ -1.0f,  1.0f,  1.0f, /* tex coords = */ 1.0f, 1.0f},
-  { /* pos = */ -1.0f,  1.0f, -1.0f, /* tex coords = */ 0.0f, 1.0f}
+static Vertex vertices[] =
+{
+  { pos_a, norm_front },
+  { pos_b, norm_front },
+  { pos_c, norm_front },
+  { pos_c, norm_front },
+  { pos_d, norm_front },
+  { pos_a, norm_front },
+
+  { pos_e, norm_right },
+  { pos_a, norm_right },
+  { pos_d, norm_right },
+  { pos_d, norm_right },
+  { pos_h, norm_right },
+  { pos_e, norm_right },
+
+  { pos_f, norm_back },
+  { pos_e, norm_back },
+  { pos_h, norm_back },
+  { pos_h, norm_back },
+  { pos_g, norm_back },
+  { pos_f, norm_back },
+
+  { pos_b, norm_left },
+  { pos_f, norm_left },
+  { pos_g, norm_left },
+  { pos_g, norm_left },
+  { pos_c, norm_left },
+  { pos_b, norm_left },
+
+  { pos_e, norm_top },
+  { pos_f, norm_top },
+  { pos_b, norm_top },
+  { pos_b, norm_top },
+  { pos_a, norm_top },
+  { pos_e, norm_top },
+
+  { pos_c, norm_bottom },
+  { pos_g, norm_bottom },
+  { pos_h, norm_bottom },
+  { pos_h, norm_bottom },
+  { pos_d, norm_bottom },
+  { pos_c, norm_bottom }
 };
+
+static CoglPrimitive *
+create_cube_primitive (Cube *cube)
+{
+  CoglAttributeBuffer *attribute_buffer;
+  CoglAttribute *attributes[2];
+  CoglPrimitive *primitive;
+
+  attribute_buffer = cogl_attribute_buffer_new (cube->context,
+                                                sizeof (vertices),
+                                                vertices);
+  attributes[0] = cogl_attribute_new (attribute_buffer,
+                                      "cogl_position_in",
+                                      sizeof (Vertex),
+                                      offsetof (Vertex, x),
+                                      3,
+                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  attributes[1] = cogl_attribute_new (attribute_buffer,
+                                      "cogl_normal_in",
+                                      sizeof (Vertex),
+                                      offsetof (Vertex, n_x),
+                                      3,
+                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  cogl_object_unref (attribute_buffer);
+
+  primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_TRIANGLES,
+                                                  G_N_ELEMENTS (vertices),
+                                                  attributes, 2);
+  cogl_object_unref (attributes[0]);
+  cogl_object_unref (attributes[1]);
+
+  return primitive;
+}
 
 static void
 paint (ClutterActor *stage,
@@ -136,13 +205,7 @@ main (int argc, char **argv)
   backend = clutter_get_default_backend ();
   cube.context = ctx = clutter_backend_get_cogl_context (backend);
 
-  cube.indices = cogl_get_rectangle_indices (ctx, 6 /* n_rectangles */);
-  cube.prim = cogl_primitive_new_p3t2 (ctx, COGL_VERTICES_MODE_TRIANGLES,
-                                       G_N_ELEMENTS (vertices),
-                                       vertices);
-  cogl_primitive_set_indices (cube.prim,
-                              cube.indices,
-                              6 * 6);
+  cube.prim = create_cube_primitive (&cube);
 
   cube.pipeline = cogl_pipeline_new (ctx);
   //cogl_pipeline_set_layer_texture (cube.pipeline, 0, cube.texture);
