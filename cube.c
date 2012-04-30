@@ -181,6 +181,7 @@ main (int argc, char **argv)
   ClutterBackend *backend;
   CoglContext *ctx;
   CoglDepthState depth_state;
+  CoglSnippet *snippet;
   Cube cube;
 
   if (clutter_init (&argc, &argv) != CLUTTER_INIT_SUCCESS)
@@ -219,6 +220,60 @@ main (int argc, char **argv)
   cogl_depth_state_set_test_enabled (&depth_state, TRUE);
 
   cogl_pipeline_set_depth_state (cube.pipeline, &depth_state, NULL);
+
+  /* set up our vertex shader */
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+
+                              /* definitions */
+                              "varying vec4 color;\n"
+
+                              "struct light\n"
+                              "{\n"
+                              "  vec4 position;\n"
+                              "  vec4 diffuse;\n"
+                              "};\n"
+
+                              "light light0 = light(\n"
+                              "  vec4(0.0, 0.0, 2.0, 0.0),\n"
+                              "  vec4(1.0, 0.8, 0.8, 1.0)\n"
+                              ");\n"
+
+                              "struct material\n"
+                              "{\n"
+                              "  vec4 diffuse;\n"
+                              "};\n"
+
+                              "material cube_material = material(\n"
+                              "  vec4(1.0, 0.0, 0.0, 1.0)\n"
+                              ");\n",
+
+                              /* per vertex diffuse, directional light */
+                              "vec3 normal_direction =\n"
+                              "  normalize(gl_NormalMatrix * cogl_normal_in);\n"
+                              "vec3 light_direction =\n"
+                              "  normalize(vec3(light0.position));\n"
+
+                              "vec3 diffuse = vec3(cube_material.diffuse) *\n"
+                              "               vec3(light0.diffuse) *\n"
+                              "               max(0.0, dot(normal_direction,\n"
+                              "                            light_direction));\n"
+
+                              "color = vec4(diffuse, 1.0);\n"
+                              );
+  cogl_pipeline_add_snippet (cube.pipeline, snippet);
+  cogl_object_unref (snippet);
+
+  /* and fragment shader */
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+                              /* definitions */
+                              "varying vec4 color;\n",
+                              /* post */
+                              NULL);
+  /* per vertex lighting, just forward the color */
+  cogl_snippet_set_replace (snippet, "cogl_color_out = color;\n");
+
+  cogl_pipeline_add_snippet (cube.pipeline, snippet);
+  cogl_object_unref (snippet);
 
   clutter_actor_show_all (cube.stage);
   clutter_timeline_start (cube.timeline);
