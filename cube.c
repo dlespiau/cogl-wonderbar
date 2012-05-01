@@ -235,7 +235,7 @@ paint (ClutterActor *stage,
   cogl_framebuffer_push_matrix (fb);
   cogl_framebuffer_translate (fb, width / 2, height / 2, 0);
 
-  cogl_framebuffer_scale (fb, 75, 75, 75);
+  cogl_framebuffer_scale (fb, 75, -75, 75);
 
   cogl_framebuffer_draw_primitive (fb,
                                    cube->plane_pipeline,
