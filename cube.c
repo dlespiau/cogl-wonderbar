@@ -15,7 +15,8 @@ typedef struct
   CoglContext *context;
   CoglPrimitive *cube_primitive;
   CoglPrimitive *plane_primitive;
-  CoglPipeline *pipeline;
+  CoglPipeline *cube_pipeline;
+  CoglPipeline *plane_pipeline;
 
 } Cube;
 
@@ -236,13 +237,17 @@ paint (ClutterActor *stage,
 
   cogl_framebuffer_scale (fb, 75, 75, 75);
 
-  cogl_framebuffer_draw_primitive (fb, cube->pipeline, cube->plane_primitive);
+  cogl_framebuffer_draw_primitive (fb,
+                                   cube->plane_pipeline,
+                                   cube->plane_primitive);
 
   progress = clutter_timeline_get_progress (cube->timeline);
   cogl_framebuffer_rotate (fb, progress * 360, 0, 1, 1);
   cogl_framebuffer_rotate (fb, progress * 360, 0, 1, 0);
 
-  cogl_framebuffer_draw_primitive (fb, cube->pipeline, cube->cube_primitive);
+  cogl_framebuffer_draw_primitive (fb,
+                                   cube->cube_pipeline,
+                                   cube->cube_primitive);
 
   cogl_framebuffer_pop_matrix (fb);
 }
@@ -291,9 +296,8 @@ main (int argc, char **argv)
   cube.plane_primitive = create_plane_primitive (&cube);
   cube.cube_primitive = create_cube_primitive (&cube);
 
-  cube.pipeline = cogl_pipeline_new (ctx);
-  //cogl_pipeline_set_layer_texture (cube.pipeline, 0, cube.texture);
-  cogl_pipeline_set_color4f (cube.pipeline, 1.0f, 0.f, 0.f, 1.f);
+  cube.cube_pipeline = cogl_pipeline_new (ctx);
+  cogl_pipeline_set_color4f (cube.cube_pipeline, 1.0f, 0.f, 0.f, 1.f);
 
   /* Since the box is made of multiple triangles that will overlap
    * when drawn and we don't control the order they are drawn in, we
@@ -302,7 +306,7 @@ main (int argc, char **argv)
   cogl_depth_state_init (&depth_state);
   cogl_depth_state_set_test_enabled (&depth_state, TRUE);
 
-  cogl_pipeline_set_depth_state (cube.pipeline, &depth_state, NULL);
+  cogl_pipeline_set_depth_state (cube.cube_pipeline, &depth_state, NULL);
 
   /* set up our vertex shader */
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
@@ -319,15 +323,6 @@ main (int argc, char **argv)
                               "light light0 = light(\n"
                               "  vec4(0.0, 0.0, 2.0, 0.0),\n"
                               "  vec4(1.0, 0.8, 0.8, 1.0)\n"
-                              ");\n"
-
-                              "struct material\n"
-                              "{\n"
-                              "  vec4 diffuse;\n"
-                              "};\n"
-
-                              "material cube_material = material(\n"
-                              "  vec4(1.0, 0.0, 0.0, 1.0)\n"
                               ");\n",
 
                               /* per vertex diffuse, directional light */
@@ -336,14 +331,14 @@ main (int argc, char **argv)
                               "vec3 light_direction =\n"
                               "  normalize(vec3(light0.position));\n"
 
-                              "vec3 diffuse = vec3(cube_material.diffuse) *\n"
+                              "vec3 diffuse = vec3(cogl_color_in) *\n"
                               "               vec3(light0.diffuse) *\n"
                               "               max(0.0, dot(normal_direction,\n"
                               "                            light_direction));\n"
 
                               "color = vec4(diffuse, 1.0);\n"
                               );
-  cogl_pipeline_add_snippet (cube.pipeline, snippet);
+  cogl_pipeline_add_snippet (cube.cube_pipeline, snippet);
   cogl_object_unref (snippet);
 
   /* and fragment shader */
@@ -355,8 +350,13 @@ main (int argc, char **argv)
   /* per vertex lighting, just forward the color */
   cogl_snippet_set_replace (snippet, "cogl_color_out = color;\n");
 
-  cogl_pipeline_add_snippet (cube.pipeline, snippet);
+  cogl_pipeline_add_snippet (cube.cube_pipeline, snippet);
   cogl_object_unref (snippet);
+
+  /* The plane pipeline is the same than the cube one, with just the color
+   * changed */
+  cube.plane_pipeline = cogl_pipeline_copy (cube.cube_pipeline);
+  cogl_pipeline_set_color4f (cube.plane_pipeline, 0.0f, 0.0f, 1.0f, 1.0f);
 
   clutter_actor_show_all (cube.stage);
   clutter_timeline_start (cube.timeline);
