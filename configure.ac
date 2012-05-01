@@ -19,7 +19,7 @@ AC_PROG_CC
 AC_HEADER_STDC
 
 AS_COMPILER_FLAGS([WARNING_CFLAGS],
-		  ["-Wall -Wshadow -Wcast-align -Wno-uninitialized
+		  ["-Wall -Wcast-align -Wno-uninitialized
 		   -Wno-strict-aliasing -Wempty-body -Wformat -Wformat-security
 		   -Winit-self -Wdeclaration-after-statement -Wvla
 		   -Wpointer-arith"])

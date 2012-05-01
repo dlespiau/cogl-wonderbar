@@ -47,7 +47,6 @@ struct _MashDataLoaderPrivate
 static void
 mash_data_loader_class_init (MashDataLoaderClass *klass)
 {
-  GObjectClass *gobject_class = (GObjectClass *) klass;
 }
 
 static void
