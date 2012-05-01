@@ -13,7 +13,8 @@ typedef struct
   ClutterTimeline *timeline;
 
   CoglContext *context;
-  CoglPrimitive *prim;
+  CoglPrimitive *cube_primitive;
+  CoglPrimitive *plane_primitive;
   CoglPipeline *pipeline;
 
 } Cube;
@@ -54,7 +55,7 @@ typedef struct
 #define norm_top     0.0f,  1.0f,  0.0f
 #define norm_bottom  0.0f, -1.0f,  0.0f
 
-static Vertex vertices[] =
+static Vertex cube_vertices[] =
 {
   { pos_a, norm_front },
   { pos_b, norm_front },
@@ -99,6 +100,22 @@ static Vertex vertices[] =
   { pos_c, norm_bottom }
 };
 
+#undef pos_a
+#undef pos_b
+#undef pos_c
+#undef pos_d
+#undef pos_e
+#undef pos_f
+#undef pos_g
+#undef pos_h
+
+#undef norm_front
+#undef norm_right
+#undef norm_back
+#undef norm_left
+#undef norm_top
+#undef norm_bottom
+
 static CoglPrimitive *
 create_cube_primitive (Cube *cube)
 {
@@ -107,8 +124,8 @@ create_cube_primitive (Cube *cube)
   CoglPrimitive *primitive;
 
   attribute_buffer = cogl_attribute_buffer_new (cube->context,
-                                                sizeof (vertices),
-                                                vertices);
+                                                sizeof (cube_vertices),
+                                                cube_vertices);
   attributes[0] = cogl_attribute_new (attribute_buffer,
                                       "cogl_position_in",
                                       sizeof (Vertex),
@@ -124,7 +141,7 @@ create_cube_primitive (Cube *cube)
   cogl_object_unref (attribute_buffer);
 
   primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_TRIANGLES,
-                                                  G_N_ELEMENTS (vertices),
+                                                  G_N_ELEMENTS (cube_vertices),
                                                   attributes, 2);
   cogl_object_unref (attributes[0]);
   cogl_object_unref (attributes[1]);
@@ -132,6 +149,70 @@ create_cube_primitive (Cube *cube)
   return primitive;
 }
 
+/*
+ *        b +--------+ a
+ *         /        /
+ *        /        /
+ *    c  /      d /
+ *      +--------+
+ */
+
+#define pos_a    10.0f, -2.0f, -10.0f
+#define pos_b   -10.0f, -2.0f, -10.0f
+#define pos_c   -10.0f, -2.0f,  10.0f
+#define pos_d    10.0f, -2.0f,  10.0f
+
+#define norm     1.0f,  1.0f, 1.0f
+
+static Vertex plane_vertices[] =
+{
+  { pos_a, norm },
+  { pos_b, norm },
+  { pos_c, norm },
+  { pos_c, norm },
+  { pos_d, norm },
+  { pos_a, norm },
+};
+
+#undef pos_a
+#undef pos_b
+#undef pos_c
+#undef pos_d
+
+#undef norm
+
+static CoglPrimitive *
+create_plane_primitive (Cube *cube)
+{
+  CoglAttributeBuffer *attribute_buffer;
+  CoglAttribute *attributes[2];
+  CoglPrimitive *primitive;
+
+  attribute_buffer = cogl_attribute_buffer_new (cube->context,
+                                                sizeof (plane_vertices),
+                                                plane_vertices);
+  attributes[0] = cogl_attribute_new (attribute_buffer,
+                                      "cogl_position_in",
+                                      sizeof (Vertex),
+                                      offsetof (Vertex, x),
+                                      3,
+                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  attributes[1] = cogl_attribute_new (attribute_buffer,
+                                      "cogl_normal_in",
+                                      sizeof (Vertex),
+                                      offsetof (Vertex, n_x),
+                                      3,
+                                      COGL_ATTRIBUTE_TYPE_FLOAT);
+  cogl_object_unref (attribute_buffer);
+
+  primitive = cogl_primitive_new_with_attributes (COGL_VERTICES_MODE_TRIANGLES,
+                                                  G_N_ELEMENTS (plane_vertices),
+                                                  attributes, 2);
+  cogl_object_unref (attributes[0]);
+  cogl_object_unref (attributes[1]);
+
+  return primitive;
+}
 static void
 paint (ClutterActor *stage,
        gpointer      data)
@@ -155,12 +236,13 @@ paint (ClutterActor *stage,
 
   cogl_framebuffer_scale (fb, 75, 75, 75);
 
+  cogl_framebuffer_draw_primitive (fb, cube->pipeline, cube->plane_primitive);
 
   progress = clutter_timeline_get_progress (cube->timeline);
-  cogl_framebuffer_rotate (fb, progress * 360, 0, 0, 1);
+  cogl_framebuffer_rotate (fb, progress * 360, 0, 1, 1);
   cogl_framebuffer_rotate (fb, progress * 360, 0, 1, 0);
 
-  cogl_framebuffer_draw_primitive (fb, cube->pipeline, cube->prim);
+  cogl_framebuffer_draw_primitive (fb, cube->pipeline, cube->cube_primitive);
 
   cogl_framebuffer_pop_matrix (fb);
 }
@@ -200,13 +282,14 @@ main (int argc, char **argv)
                     G_CALLBACK (on_new_frame), &cube);
 
   /*
-   * Setup CoglObjects to render our cube
+   * Setup CoglObjects to render our plane and cube
    */
 
   backend = clutter_get_default_backend ();
   cube.context = ctx = clutter_backend_get_cogl_context (backend);
 
-  cube.prim = create_cube_primitive (&cube);
+  cube.plane_primitive = create_plane_primitive (&cube);
+  cube.cube_primitive = create_cube_primitive (&cube);
 
   cube.pipeline = cogl_pipeline_new (ctx);
   //cogl_pipeline_set_layer_texture (cube.pipeline, 0, cube.texture);
