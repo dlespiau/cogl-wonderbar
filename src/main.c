@@ -7,6 +7,8 @@
 #include <cogl/cogl.h>
 #include <clutter/clutter.h>
 
+#include "mash-data-loader.h"
+
 typedef struct
 {
   ClutterActor *stage;
@@ -17,6 +19,8 @@ typedef struct
   CoglPrimitive *plane_primitive;
   CoglPipeline *cube_pipeline;
   CoglPipeline *plane_pipeline;
+
+  MashData *ply_data;
 
 } Cube;
 
@@ -214,6 +218,28 @@ create_plane_primitive (Cube *cube)
 
   return primitive;
 }
+
+/*
+ * PLY loader
+ */
+
+static MashData *
+create_ply_primitive (Cube        *cube,
+                      const gchar *filename)
+{
+  MashData *data = mash_data_new ();
+  GError *error = NULL;
+
+  mash_data_load (data, MASH_DATA_NONE, filename, &error);
+  if (error)
+    {
+      g_critical ("could not load model %s: %s", filename, error->message);
+      return NULL;
+    }
+
+  return data;
+}
+
 static void
 paint (ClutterActor *stage,
        gpointer      data)
@@ -245,9 +271,17 @@ paint (ClutterActor *stage,
   cogl_framebuffer_rotate (fb, progress * 360, 0, 1, 1);
   cogl_framebuffer_rotate (fb, progress * 360, 0, 1, 0);
 
-  cogl_framebuffer_draw_primitive (fb,
-                                   cube->cube_pipeline,
-                                   cube->cube_primitive);
+  if (1)
+    {
+      cogl_set_source (cube->cube_pipeline);
+      mash_data_render (cube->ply_data);
+    }
+  else
+    {
+      cogl_framebuffer_draw_primitive (fb,
+                                       cube->cube_pipeline,
+                                       cube->cube_primitive);
+    }
 
   cogl_framebuffer_pop_matrix (fb);
 }
@@ -295,6 +329,7 @@ main (int argc, char **argv)
 
   cube.plane_primitive = create_plane_primitive (&cube);
   cube.cube_primitive = create_cube_primitive (&cube);
+  cube.ply_data = create_ply_primitive (&cube, "suzanne.ply");
 
   cube.cube_pipeline = cogl_pipeline_new (ctx);
   cogl_pipeline_set_color4f (cube.cube_pipeline, 1.0f, 0.f, 0.f, 1.f);
