@@ -1,3 +1,5 @@
+*.la
+*.lo
 *.o
 *~
 .*.sw?
@@ -6,6 +8,7 @@
 Makefile
 Makefile.in
 TAGS
+libtool
 stamp-*
 
 /aclocal.m4
@@ -16,8 +19,14 @@ stamp-*
 /config.status
 /configure
 
+/build/config.guess
+/build/config.sub
 /build/depcomp
 /build/install-sh
+/build/ltmain.sh
 /build/missing
+
+/build/*.m4
+!/build/as-compiler-flag.m4
 
 wonderbar

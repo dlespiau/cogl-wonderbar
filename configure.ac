@@ -10,6 +10,8 @@ AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([1.11 -Wall foreign no-define])
 AM_SILENT_RULES([yes])
 
+AC_PROG_LIBTOOL
+
 # Check for programs
 AC_PROG_CC
 
@@ -22,6 +24,7 @@ AS_COMPILER_FLAGS([WARNING_CFLAGS],
 		   -Winit-self -Wdeclaration-after-statement -Wvla
 		   -Wpointer-arith"])
 
+PKG_CHECK_MODULES([GLIB],    [glib-2.0 >= 2.28])
 PKG_CHECK_MODULES([CLUTTER], [clutter-1.0 >= 1.10])
 
 AC_OUTPUT([
