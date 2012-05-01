@@ -329,7 +329,7 @@ main (int argc, char **argv)
 
   cube.plane_primitive = create_plane_primitive (&cube);
   cube.cube_primitive = create_cube_primitive (&cube);
-  cube.ply_data = create_ply_primitive (&cube, "suzanne.ply");
+  cube.ply_data = create_ply_primitive (&cube, "sphere.ply");
 
   cube.cube_pipeline = cogl_pipeline_new (ctx);
   cogl_pipeline_set_color4f (cube.cube_pipeline, 1.0f, 0.2f, 0.2f, 1.f);
@@ -344,21 +344,11 @@ main (int argc, char **argv)
   cogl_pipeline_set_depth_state (cube.cube_pipeline, &depth_state, NULL);
 
   /* set up our vertex shader */
-  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+#if 0
+  snippet = cogl_snippet_new (cogl_snippet_hook_vertex,
 
                               /* definitions */
                               "varying vec4 color;\n"
-
-                              "struct light\n"
-                              "{\n"
-                              "  vec4 position;\n"
-                              "  vec4 diffuse;\n"
-                              "};\n"
-
-                              "light light0 = light(\n"
-                              "  vec4(1.0, 1.0, 1.0, 0.0),\n"
-                              "  vec4(1.0, 0.8, 0.8, 1.0)\n"
-                              ");\n",
 
                               /* per vertex diffuse, directional light */
                               "vec3 normal_direction =\n"
@@ -373,10 +363,33 @@ main (int argc, char **argv)
 
                               "color = vec4(diffuse, 1.0);\n"
                               );
+#endif
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
+
+      /* definitions */
+      "varying vec3 normal_direction, light_direction, eye_direction;\n"
+
+      "struct light\n"
+      "{\n"
+      "  vec4 position;\n"
+      "  vec4 diffuse;\n"
+      "};\n"
+
+      "light light0 = light(\n"
+      "  vec4(1.0, 1.0, 1.0, 0.0),\n"
+      "  vec4(1.0, 0.8, 0.8, 1.0)\n"
+      ");\n",
+
+      "normal_direction = normalize(gl_NormalMatrix * cogl_normal_in);\n"
+      "light_direction  = normalize(vec3(light0.position));\n"
+      "eye_direction    = -vec3(cogl_modelview_matrix * cogl_position_in);\n"
+  );
+
   cogl_pipeline_add_snippet (cube.cube_pipeline, snippet);
   cogl_object_unref (snippet);
 
   /* and fragment shader */
+#if 0
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
                               /* definitions */
                               "varying vec4 color;\n",
@@ -384,6 +397,49 @@ main (int argc, char **argv)
                               NULL);
   /* per vertex lighting, just forward the color */
   cogl_snippet_set_replace (snippet, "cogl_color_out = color;\n");
+#endif
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
+      /* definitions */
+      "varying vec3 normal_direction, light_direction, eye_direction;\n"
+
+      "struct light\n"
+      "{\n"
+      "  vec4 position;\n"
+      "  vec4 ambient;\n"
+      "  vec4 diffuse;\n"
+      "  vec4 specular;\n"
+      "};\n"
+
+      "light light0 = light(\n"
+      "  vec4(1.0, 1.0, 1.0, 0.0),\n"
+      "  vec4(0.2, 0.2, 0.2, 1.0),\n"
+      "  vec4(1.0, 0.8, 0.8, 1.0),\n"
+      "  vec4(0.6, 0.6, 0.6, 1.0)\n"
+      ");\n",
+
+      /* post */
+      NULL);
+  cogl_snippet_set_replace (snippet,
+      "vec4 final_color = light0.ambient * cogl_color_in;\n"
+
+      " vec3 L = normalize(light_direction);\n"
+      " vec3 N = normalize(normal_direction);\n"
+
+      "float lambert = dot(N, L);\n"
+
+      "if (lambert > 0.0)\n"
+      "{\n"
+      "  final_color += cogl_color_in * light0.diffuse * lambert;\n"
+
+      "  vec3 E = normalize(eye_direction);\n"
+      "  vec3 R = reflect (-L, N);\n"
+      "  float specular = pow (max(dot(R, E), 0.0),\n"
+      "                        2.);\n"
+      "  final_color += light0.specular * vec4(.6, .6, .6, 1.0) * specular;\n"
+      "}\n"
+
+      "cogl_color_out = final_color;\n"
+  );
 
   cogl_pipeline_add_snippet (cube.cube_pipeline, snippet);
   cogl_object_unref (snippet);
