@@ -332,7 +332,7 @@ main (int argc, char **argv)
   cube.ply_data = create_ply_primitive (&cube, "suzanne.ply");
 
   cube.cube_pipeline = cogl_pipeline_new (ctx);
-  cogl_pipeline_set_color4f (cube.cube_pipeline, 1.0f, 0.f, 0.f, 1.f);
+  cogl_pipeline_set_color4f (cube.cube_pipeline, 1.0f, 0.2f, 0.2f, 1.f);
 
   /* Since the box is made of multiple triangles that will overlap
    * when drawn and we don't control the order they are drawn in, we
@@ -356,7 +356,7 @@ main (int argc, char **argv)
                               "};\n"
 
                               "light light0 = light(\n"
-                              "  vec4(0.0, 0.0, 2.0, 0.0),\n"
+                              "  vec4(1.0, 1.0, 1.0, 0.0),\n"
                               "  vec4(1.0, 0.8, 0.8, 1.0)\n"
                               ");\n",
 
@@ -391,7 +391,7 @@ main (int argc, char **argv)
   /* The plane pipeline is the same than the cube one, with just the color
    * changed */
   cube.plane_pipeline = cogl_pipeline_copy (cube.cube_pipeline);
-  cogl_pipeline_set_color4f (cube.plane_pipeline, 0.0f, 0.0f, 1.0f, 1.0f);
+  cogl_pipeline_set_color4f (cube.plane_pipeline, 0.0f, 0.1f, 5.0f, 1.0f);
 
   clutter_actor_show_all (cube.stage);
   clutter_timeline_start (cube.timeline);
