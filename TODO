@@ -1,1 +1,4 @@
 * Compute the gl_NormalMatrix ourselves
+* cogl: cogl_quaternion_init_from_euler() is not documented
+* cogl: cogl_quaternion_init_from_quaternion() to avoid the allocation
+* cogl: could cogl_quaternion_multiply() multiply in place?

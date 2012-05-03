@@ -1,6 +1,3 @@
-#define COGL_ENABLE_EXPERIMENTAL_2_0_API
-#define CLUTTER_ENABLE_EXPERIMENTAL_API
-
 #include <string.h>
 #include <stdlib.h>
 
@@ -8,6 +5,7 @@
 #include <clutter/clutter.h>
 
 #include "mash-data-loader.h"
+#include "entity.h"
 
 typedef struct
 {
@@ -19,6 +17,8 @@ typedef struct
   CoglPrimitive *plane_primitive;
   CoglPipeline *cube_pipeline;
   CoglPipeline *plane_pipeline;
+
+  Entity entity;
 
   MashData *ply_data;
 
@@ -253,24 +253,40 @@ paint (ClutterActor *stage,
   fb = cogl_get_draw_framebuffer ();
   width = cogl_framebuffer_get_width (fb);
   height = cogl_framebuffer_get_height (fb);
+  progress = clutter_timeline_get_progress (cube->timeline);
 
   cogl_framebuffer_clear4f (fb,
                             COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
                             0, 0, 0, 1);
 
   cogl_framebuffer_push_matrix (fb);
-  cogl_framebuffer_translate (fb, width / 2, height / 2, 0);
 
+  cogl_framebuffer_translate (fb, width / 2, height / 2, 0);
   cogl_framebuffer_scale (fb, 75, -75, 75);
 
+  /* draw plane */
   cogl_framebuffer_draw_primitive (fb,
                                    cube->plane_pipeline,
                                    cube->plane_primitive);
+  /* draw entity */
+  cogl_framebuffer_push_matrix (fb);
 
-  progress = clutter_timeline_get_progress (cube->timeline);
+  cogl_framebuffer_scale (fb, .2, .2, .2);
+
+  /* move to (1, 0, 0) */
+  es_entity_translate (&cube->entity, 1 * progress, 0.f, 0.f);
+  cogl_framebuffer_transform (fb, es_entity_get_transform (&cube->entity));
+  cogl_framebuffer_draw_primitive (fb,
+                                   cube->cube_pipeline,
+                                   cube->cube_primitive);
+
+  cogl_framebuffer_pop_matrix (fb);
+
+  /* draw cube/ply */
   cogl_framebuffer_rotate (fb, progress * 360, 0, 1, 1);
   cogl_framebuffer_rotate (fb, progress * 360, 0, 1, 0);
 
+#if 0
   if (1)
     {
       cogl_set_source (cube->cube_pipeline);
@@ -282,6 +298,7 @@ paint (ClutterActor *stage,
                                        cube->cube_pipeline,
                                        cube->cube_primitive);
     }
+#endif
 
   cogl_framebuffer_pop_matrix (fb);
 }
@@ -326,6 +343,9 @@ main (int argc, char **argv)
 
   backend = clutter_get_default_backend ();
   cube.context = ctx = clutter_backend_get_cogl_context (backend);
+
+  es_entity_init (&cube.entity);
+  es_entity_rotate_x_axis (&cube.entity, 45);
 
   cube.plane_primitive = create_plane_primitive (&cube);
   cube.cube_primitive = create_cube_primitive (&cube);
