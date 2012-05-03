@@ -5,13 +5,16 @@
 
 #include <cogl/cogl.h>
 
+#define ES_COMPONENT(p) ((Component *)(p))
+
 typedef struct _component Component;
 typedef struct _entity    Entity;
 
 struct _component
 {
+  void (*start)   (Component *component);
   void (*update)  (Component *component, uint64_t time);
-  void (*draw)    (Component *component, Entity *entity);
+  void (*draw)    (Component *component);
 };
 
 typedef enum

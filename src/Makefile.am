@@ -12,17 +12,25 @@ librply_la_LIBADD  = $(GLIB_LIBS)
 
 bin_PROGRAMS = wonderbar
 
-wonderbar_SOURCES = 		\
-	main.c 			\
-	entity.c		\
-	entity.h		\
-	mash-data-loader.c	\
-	mash-data-loader.h	\
-	mash-data.c		\
-	mash-data.h		\
-	mash-ply-loader.c	\
-	mash-ply-loader.h	\
+wonderbar_SOURCES = 			\
+	main.c 				\
+	entity.c			\
+	entity.h			\
+	mash-data-loader.c		\
+	mash-data-loader.h		\
+	mash-data.c			\
+	mash-data.h			\
+	mash-ply-loader.c		\
+	mash-ply-loader.h		\
+	components/es-mesh-renderer.c	\
+	components/es-mesh-renderer.h	\
 	$(NULL)
 
-wonderbar_CFLAGS  = $(WARNING_CFLAGS) $(CLUTTER_CFLAGS) $(experimental_cflags)
+wonderbar_CFLAGS  = 		\
+	-Isrc			\
+	$(WARNING_CFLAGS) 	\
+	$(CLUTTER_CFLAGS) 	\
+	$(experimental_cflags)	\
+	$(NULL)
+
 wonderbar_LDADD   = librply.la $(CLUTTER_LIBS)

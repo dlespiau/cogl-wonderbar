@@ -48,7 +48,7 @@ es_entity_draw (Entity *entity)
     {
       Component *component = g_ptr_array_index (entity->components, i);
 
-      component->draw(component, entity);
+      component->draw(component);
     }
 }
 
