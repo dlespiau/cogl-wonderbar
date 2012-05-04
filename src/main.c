@@ -24,7 +24,7 @@
 #include <clutter/clutter.h>
 
 #include "entity.h"
-#include "components/es-components.h"
+#include "es-components.h"
 
 typedef struct
 {
