@@ -1,5 +1,23 @@
+== Smaller
+
 * Compute the gl_NormalMatrix ourselves
 * Port the mash code to the new AttributesBuffer API
 * cogl: cogl_quaternion_init_from_euler() is not documented
 * cogl: cogl_quaternion_init_from_quaternion() to avoid the allocation
 * cogl: could cogl_quaternion_multiply() multiply in place?
+
+== Bigger
+
+* camera component, setup the scene and paint sequence with it
+* animation-clip component to animatea float
+* add quaternion interpolation to animation-clip
+* point light
+* cast shadows (soft?)
+* SSAO
+
+== Write about the learnings
+
+* lighting (phong)
+* "smooth" vertices
+* entity/components system
+* quaternions
