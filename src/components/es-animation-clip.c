@@ -124,6 +124,9 @@ es_animation_clip_start (AnimationClip *clip)
       return;
     }
 
+  if (animation_clip_has_started (clip))
+    return;
+
   clip->start_time = es_get_current_time ();
 
   animation_clip_set_started (clip);
