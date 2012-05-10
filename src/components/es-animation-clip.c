@@ -67,7 +67,7 @@ es_animation_clip_update (Component *component,
 
 /*
  * duration is given in ms in the API, but internally all computations are done
- * is micro seconds
+ * in micro seconds
  */
 Component *
 es_animation_clip_new (int32_t duration)
