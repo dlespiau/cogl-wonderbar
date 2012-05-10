@@ -42,6 +42,15 @@ es_get_cogl_context (void)
   return context;
 }
 
+static GTimer *timer;
+
+/* in micro seconds  */
+int64_t
+es_get_current_time (void)
+{
+  return (int64_t) (g_timer_elapsed (timer, NULL) * 1e6);
+}
+
 static void
 paint (ClutterActor *stage,
        gpointer      data)
@@ -50,12 +59,11 @@ paint (ClutterActor *stage,
   CoglFramebuffer *fb;
   int width;
   int height, i;
-  //double progress;
+  int64_t time; /* micro seconds */
 
   fb = cogl_get_draw_framebuffer ();
   width = cogl_framebuffer_get_width (fb);
   height = cogl_framebuffer_get_height (fb);
-  //progress = clutter_timeline_get_progress (cube->timeline);
 
   cogl_framebuffer_clear4f (fb,
                             COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
@@ -65,6 +73,16 @@ paint (ClutterActor *stage,
 
   cogl_framebuffer_translate (fb, width / 2, height / 2, 0);
   cogl_framebuffer_scale (fb, 75, -75, 75);
+
+  /* update entities */
+  time = es_get_current_time ();
+
+  for (i = 0; i < 2; i++)
+    {
+      Entity *entity = &cube->entities[i];
+
+      es_entity_update (entity, time);
+    }
 
   /* draw entities */
   for (i = 0; i < 2; i++)
@@ -234,6 +252,8 @@ main (int argc, char **argv)
 
   memset (&cube, 0, sizeof(Cube));
 
+  timer = g_timer_new ();
+
   cube.stage = clutter_stage_new ();
   g_signal_connect_after (cube.stage, "paint", G_CALLBACK (paint), &cube);
 
@@ -266,11 +286,25 @@ main (int argc, char **argv)
 
   es_entity_add_component (&cube.entities[1], component);
 
+  /* animate the x property of the sphere */
+  component = es_animation_clip_new (2000);
+  es_animation_clip_add_float (ES_ANIMATION_CLIP (component),
+                               &cube.entities[1],
+                               FLOAT_GETTER (es_entity_get_x),
+                               FLOAT_SETTER (es_entity_set_x),
+                               2.0f);
+  es_animation_clip_start (ES_ANIMATION_CLIP (component));
+
+  es_entity_add_component (&cube.entities[1], component);
+
   cogl_object_unref (pipeline1);
   cogl_object_unref (pipeline2);
 
   clutter_actor_show_all (cube.stage);
+
   clutter_timeline_start (cube.timeline);
+
+  g_timer_start (timer);
 
   clutter_main ();
 

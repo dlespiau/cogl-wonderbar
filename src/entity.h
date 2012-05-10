@@ -32,7 +32,7 @@ typedef struct _entity    Entity;
 struct _component
 {
   void (*start)   (Component *component);
-  void (*update)  (Component *component, uint64_t time);
+  void (*update)  (Component *component, int64_t time);
   void (*draw)    (Component *component);
 };
 
@@ -63,14 +63,21 @@ struct _entity
   GPtrArray *components;
 };
 
-#define es_entity_get_x(entity) (entity->position.x)
-#define es_entity_get_y(entity) (entity->position.y)
-#define es_entity_get_z(entity) (entity->position.z)
-
 void                es_entity_init          (Entity *entity);
+float               es_entity_get_x         (Entity *entity);
+void                es_entity_set_x         (Entity *entity,
+                                             float   x);
+float               es_entity_get_y         (Entity *entity);
+void                es_entity_set_y         (Entity *entity,
+                                             float   y);
+float               es_entity_get_z         (Entity *entity);
+void                es_entity_set_z         (Entity *entity,
+                                             float   z);
 const CoglMatrix *  es_entity_get_transform (Entity *entity);
 void                es_entity_add_component (Entity    *entity,
                                              Component *component);
+void                es_entity_update        (Entity  *entity,
+                                             int64_t  time);
 void                es_entity_draw          (Entity *entity);
 void                es_entity_translate     (Entity *entity,
                                              float   tx,

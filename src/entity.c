@@ -30,6 +30,49 @@ void es_entity_init (Entity *entity)
   entity->components = g_ptr_array_new ();
 }
 
+float
+es_entity_get_x (Entity *entity)
+{
+  return entity->position.x;
+}
+
+void
+es_entity_set_x (Entity *entity,
+                 float   x)
+{
+  entity->position.x = x;
+  entity_set_dirty (entity);
+}
+
+float
+es_entity_get_y (Entity *entity)
+{
+  return entity->position.y;
+}
+
+void
+es_entity_set_y (Entity *entity,
+                 float   y)
+{
+
+  entity->position.y = y;
+  entity_set_dirty (entity);
+}
+
+float
+es_entity_get_z (Entity *entity)
+{
+  return entity->position.z;
+}
+
+void
+es_entity_set_z (Entity *entity,
+                 float   z)
+{
+  entity->position.z = z;
+  entity_set_dirty (entity);
+}
+
 const CoglMatrix *
 es_entity_get_transform (Entity *entity)
 {
@@ -39,9 +82,9 @@ es_entity_get_transform (Entity *entity)
     return &entity->transform;
 
   cogl_matrix_init_translation (&translation,
-                                es_entity_get_x (entity),
-                                es_entity_get_y (entity),
-                                es_entity_get_z (entity));
+                                entity->position.x,
+                                entity->position.y,
+                                entity->position.z);
   cogl_matrix_init_from_quaternion (&entity->transform, &entity->rotation);
   cogl_matrix_multiply (&entity->transform, &entity->transform, &translation);
 
@@ -58,6 +101,21 @@ es_entity_add_component (Entity    *entity,
 }
 
 void
+es_entity_update (Entity  *entity,
+                  int64_t  time)
+{
+  int i;
+
+  for (i = 0; i < entity->components->len; i++)
+    {
+      Component *component = g_ptr_array_index (entity->components, i);
+
+      if (component->update)
+        component->update(component, time);
+    }
+}
+
+void
 es_entity_draw (Entity *entity)
 {
   int i;
@@ -66,7 +124,8 @@ es_entity_draw (Entity *entity)
     {
       Component *component = g_ptr_array_index (entity->components, i);
 
-      component->draw(component);
+      if (component->draw)
+        component->draw(component);
     }
 }
 

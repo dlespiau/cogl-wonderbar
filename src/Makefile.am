@@ -22,6 +22,8 @@ wonderbar_SOURCES = 			\
 	mash-data.h			\
 	mash-ply-loader.c		\
 	mash-ply-loader.h		\
+	components/es-animation-clip.c	\
+	components/es-animation-clip.h	\
 	components/es-mesh-renderer.c	\
 	components/es-mesh-renderer.h	\
 	$(NULL)

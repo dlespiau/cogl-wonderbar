@@ -9,7 +9,6 @@
 == Bigger
 
 * camera component, setup the scene and paint sequence with it
-* animation-clip component to animatea float
 * add quaternion interpolation to animation-clip
 * point light
 * cast shadows (soft?)

@@ -20,9 +20,14 @@
 #ifndef __MAIN_H__
 #define __MAIN_H__
 
+#include <stdint.h>
+
 #include <cogl/cogl.h>
 
 CoglContext *
 es_get_cogl_context (void);
+
+int64_t
+es_get_current_time (void);
 
 #endif /* __MAIN_H__ */
