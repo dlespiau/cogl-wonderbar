@@ -3,6 +3,7 @@
 * Compute the gl_NormalMatrix ourselves
 * Port the mash code to the new AttributesBuffer API
 * cogl: could cogl_quaternion_multiply() multiply in place?
+* expose the easing modes in AnimationClip
 
 == Bigger
 
