@@ -13,9 +13,10 @@ librply_la_LIBADD  = $(GLIB_LIBS)
 bin_PROGRAMS = wonderbar
 
 wonderbar_SOURCES = 			\
-	main.c 				\
-	entity.c			\
-	entity.h			\
+	es-main.c 			\
+	es-main.h			\
+	es-entity.c			\
+	es-entity.h			\
 	mash-data-loader.c		\
 	mash-data-loader.h		\
 	mash-data.c			\

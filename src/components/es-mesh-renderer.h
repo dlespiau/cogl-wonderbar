@@ -24,7 +24,7 @@
 
 #include <cogl/cogl.h>
 
-#include "entity.h"
+#include "es-entity.h"
 #include "mash-data-loader.h"
 
 #define ES_MESH_RENDERER(p) ((MeshRenderer *)(p))

@@ -23,7 +23,7 @@
 #include <cogl/cogl.h>
 #include <clutter/clutter.h>
 
-#include "entity.h"
+#include "es-entity.h"
 #include "es-components.h"
 
 typedef struct

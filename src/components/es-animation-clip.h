@@ -22,7 +22,7 @@
 
 #include <cogl/cogl.h>
 
-#include "entity.h"
+#include "es-entity.h"
 
 #define FLOAT_GETTER(func) ((FloatGetter) (func))
 #define FLOAT_SETTER(func) ((FloatSetter) (func))

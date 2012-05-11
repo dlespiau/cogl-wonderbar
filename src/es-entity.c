@@ -17,7 +17,7 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "entity.h"
+#include "es-entity.h"
 
 void es_entity_init (Entity *entity)
 {
