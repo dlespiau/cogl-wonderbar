@@ -20,6 +20,8 @@
 #ifndef __ES_ANIMATION_CLIP_H__
 #define __ES_ANIMATION_CLIP_H__
 
+#include <cogl/cogl.h>
+
 #include "entity.h"
 
 #define FLOAT_GETTER(func) ((FloatGetter) (func))
@@ -27,6 +29,12 @@
 
 typedef float (*FloatGetter) (void *object);
 typedef void (*FloatSetter) (void *object, float f);
+
+#define QUATERNION_GETTER(func) ((QuaternionGetter) (func))
+#define QUATERNION_SETTER(func) ((QuaternionSetter) (func))
+
+typedef CoglQuaternion * (*QuaternionGetter) (void *object);
+typedef void (*QuaternionSetter) (void *object, CoglQuaternion *quaternion);
 
 #define ES_ANIMATION_CLIP(p) ((AnimationClip *)(p))
 
@@ -62,18 +70,24 @@ struct _AnimationClip
   int64_t duration;   /* micro seconds */
   int64_t start_time; /* micro seconds */
   GArray *float_animation_data;
+  GArray *quaternion_animation_data;
 };
 
-Component * es_animation_clip_new         (int32_t duration);
+Component * es_animation_clip_new             (int32_t duration);
 
-void        es_animation_clip_free        (AnimationClip *clip);
+void        es_animation_clip_free            (AnimationClip *clip);
 
-void        es_animation_clip_add_float   (AnimationClip *clip,
-                                           void          *object,
-                                           FloatGetter    getter,
-                                           FloatSetter    setter,
-                                           float          end_value);
-void        es_animation_clip_start       (AnimationClip *clip);
-void        es_animation_clip_stop        (AnimationClip *clip);
+void        es_animation_clip_add_float       (AnimationClip *clip,
+                                               void          *object,
+                                               FloatGetter    getter,
+                                               FloatSetter    setter,
+                                               float          end_value);
+void        es_animation_clip_add_quaternion  (AnimationClip    *clip,
+                                               void             *object,
+                                               QuaternionGetter  getter,
+                                               QuaternionSetter  setter,
+                                               CoglQuaternion   *end_value);
+void        es_animation_clip_start           (AnimationClip *clip);
+void        es_animation_clip_stop            (AnimationClip *clip);
 
 #endif /* __ES_ANIMATION_CLIP_H__ */

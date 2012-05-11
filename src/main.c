@@ -282,11 +282,12 @@ main (int argc, char **argv)
 
   pipeline2 = cogl_pipeline_copy (pipeline1);
   cogl_pipeline_set_color4f (pipeline2, 0.0f, 0.1f, 5.0f, 1.0f);
-  component = es_mesh_renderer_new_from_file ("sphere.ply", pipeline2);
+  component = es_mesh_renderer_new_from_file ("suzanne.ply", pipeline2);
 
   es_entity_add_component (&cube.entities[1], component);
 
   /* animate the x property of the sphere */
+#if 0
   component = es_animation_clip_new (2000);
   es_animation_clip_add_float (ES_ANIMATION_CLIP (component),
                                &cube.entities[1],
@@ -296,6 +297,27 @@ main (int argc, char **argv)
   es_animation_clip_start (ES_ANIMATION_CLIP (component));
 
   es_entity_add_component (&cube.entities[1], component);
+#endif
+
+  /* animate the rotation of the ply object */
+  {
+    CoglEuler end_angles;
+    CoglQuaternion end_rotation;
+
+    cogl_euler_init (&end_angles, 90, -90, 0);
+    cogl_quaternion_init_from_euler (&end_rotation, &end_angles);
+
+    component = es_animation_clip_new (2000);
+    es_animation_clip_add_quaternion (ES_ANIMATION_CLIP (component),
+                                      &cube.entities[1],
+                                      QUATERNION_GETTER (es_entity_get_rotation),
+                                      QUATERNION_SETTER (es_entity_set_rotation),
+                                      &end_rotation);
+
+    es_animation_clip_start (ES_ANIMATION_CLIP (component));
+
+    es_entity_add_component (&cube.entities[1], component);
+  }
 
   cogl_object_unref (pipeline1);
   cogl_object_unref (pipeline2);

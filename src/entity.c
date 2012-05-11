@@ -73,6 +73,19 @@ es_entity_set_z (Entity *entity,
   entity_set_dirty (entity);
 }
 
+const CoglQuaternion *
+es_entity_get_rotation (Entity *entity)
+{
+  return &entity->rotation;
+}
+
+void es_entity_set_rotation (Entity *entity,
+                             CoglQuaternion *rotation)
+{
+  cogl_quaternion_init_from_quaternion (&entity->rotation, rotation);
+  entity_set_dirty (entity);
+}
+
 const CoglMatrix *
 es_entity_get_transform (Entity *entity)
 {

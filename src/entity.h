@@ -63,27 +63,30 @@ struct _entity
   GPtrArray *components;
 };
 
-void                es_entity_init          (Entity *entity);
-float               es_entity_get_x         (Entity *entity);
-void                es_entity_set_x         (Entity *entity,
-                                             float   x);
-float               es_entity_get_y         (Entity *entity);
-void                es_entity_set_y         (Entity *entity,
-                                             float   y);
-float               es_entity_get_z         (Entity *entity);
-void                es_entity_set_z         (Entity *entity,
-                                             float   z);
-const CoglMatrix *  es_entity_get_transform (Entity *entity);
-void                es_entity_add_component (Entity    *entity,
-                                             Component *component);
-void                es_entity_update        (Entity  *entity,
-                                             int64_t  time);
-void                es_entity_draw          (Entity *entity);
-void                es_entity_translate     (Entity *entity,
-                                             float   tx,
-                                             float   tz,
-                                             float   ty);
-void                es_entity_rotate_x_axis (Entity *entity,
-                                             float   x_angle);
+void                    es_entity_init          (Entity *entity);
+float                   es_entity_get_x         (Entity *entity);
+void                    es_entity_set_x         (Entity *entity,
+                                                 float   x);
+float                   es_entity_get_y         (Entity *entity);
+void                    es_entity_set_y         (Entity *entity,
+                                                 float   y);
+float                   es_entity_get_z         (Entity *entity);
+void                    es_entity_set_z         (Entity *entity,
+                                                 float   z);
+const CoglQuaternion *  es_entity_get_rotation  (Entity *entity);
+void                    es_entity_set_rotation  (Entity *entity,
+                                                 CoglQuaternion *rotation);
+const CoglMatrix *      es_entity_get_transform (Entity *entity);
+void                    es_entity_add_component (Entity    *entity,
+                                                 Component *component);
+void                    es_entity_update        (Entity  *entity,
+                                                 int64_t  time);
+void                    es_entity_draw          (Entity *entity);
+void                    es_entity_translate     (Entity *entity,
+                                                 float   tx,
+                                                 float   tz,
+                                                 float   ty);
+void                    es_entity_rotate_x_axis (Entity *entity,
+                                                 float   x_angle);
 
 #endif /* __ES_ENTITY_H__ */

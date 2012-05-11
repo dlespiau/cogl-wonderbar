@@ -7,7 +7,6 @@
 == Bigger
 
 * camera component, setup the scene and paint sequence with it
-* add quaternion interpolation to animation-clip
 * point light
 * cast shadows (soft?)
 * SSAO
