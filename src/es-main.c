@@ -32,6 +32,11 @@ typedef struct
   ClutterTimeline *timeline;
 
   Entity entities[3];
+
+  /* shadow mapping */
+  CoglOffscreen *shadow_fb;
+  CoglTexture2D *shadow_color_buffer;
+  CoglTexture   *shadow_map;
 } Cube;
 
 static CoglContext *context;
@@ -52,6 +57,29 @@ es_get_current_time (void)
 }
 
 static void
+draw_entities (Cube *cube,
+               CoglFramebuffer *fb)
+{
+  int i;
+
+  for (i = 0; i < 2; i++)
+    {
+      const CoglMatrix *transform;
+      Entity *entity;
+
+      cogl_framebuffer_push_matrix (fb);
+
+      entity = &cube->entities[i];
+      transform = es_entity_get_transform (entity);
+
+      cogl_framebuffer_transform (fb, transform);
+      es_entity_draw (entity);
+
+      cogl_framebuffer_pop_matrix (fb);
+    }
+}
+
+static void
 paint (ClutterActor *stage,
        gpointer      data)
 {
@@ -60,7 +88,41 @@ paint (ClutterActor *stage,
   int width;
   int height, i;
   int64_t time; /* micro seconds */
+  CoglMatrix shadow_transform;
+  CoglFramebuffer *shadow_fb;
 
+  /*
+   * render the shadow map
+   */
+
+  shadow_fb = COGL_FRAMEBUFFER (cube->shadow_fb);
+
+  cogl_push_framebuffer (shadow_fb);
+
+  cogl_framebuffer_clear4f (shadow_fb,
+                            COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
+                            0, 1, 0, 1);
+
+  /* the light position is hardcoded for now */
+  cogl_matrix_init_identity (&shadow_transform);
+  cogl_matrix_look_at (&shadow_transform,
+                       3.f, 0.f, 2.f,     /* light position */
+                       .0f, 0.f, 0.f,     /* direction to look at */
+                       .0f, 1.f, 0.f);    /* world up */
+
+  cogl_framebuffer_set_modelview_matrix (shadow_fb, &shadow_transform);
+  cogl_framebuffer_scale (shadow_fb, 2, 2, 2);
+
+  draw_entities (cube, shadow_fb);
+
+  cogl_pop_framebuffer ();
+
+  /*
+   * render the scene
+   */
+
+  /* setup the base tranformation matrix, we use clutter so the transformation
+   * is relative to the default one in clutter */
   fb = cogl_get_draw_framebuffer ();
   width = cogl_framebuffer_get_width (fb);
   height = cogl_framebuffer_get_height (fb);
@@ -85,21 +147,14 @@ paint (ClutterActor *stage,
     }
 
   /* draw entities */
-  for (i = 0; i < 2; i++)
-    {
-      const CoglMatrix *transform;
-      Entity *entity;
+  draw_entities (cube, fb);
 
-      cogl_framebuffer_push_matrix (fb);
+  /* draw the color and depth buffers of the shadow FBO to debug it */
+  cogl_set_source_texture (COGL_TEXTURE (cube->shadow_color_buffer));
+  cogl_rectangle (-4, 3, -2, 1);
 
-      entity = &cube->entities[i];
-      transform = es_entity_get_transform (entity);
-
-      cogl_framebuffer_transform (fb, transform);
-      es_entity_draw (entity);
-
-      cogl_framebuffer_pop_matrix (fb);
-    }
+  cogl_set_source_texture (COGL_TEXTURE (cube->shadow_map));
+  cogl_rectangle (-4, 1, -2, -1);
 
   cogl_framebuffer_pop_matrix (fb);
 }
@@ -162,7 +217,7 @@ create_diffuse_specular_material (void)
       "};\n"
 
       "light light0 = light(\n"
-      "  vec4(1.0, 1.0, 1.0, 0.0),\n"
+      "  vec4(3.0, 0.0, 0.0, 0.0),\n"
       "  vec4(1.0, 0.8, 0.8, 1.0)\n"
       ");\n",
 
@@ -197,7 +252,7 @@ create_diffuse_specular_material (void)
       "};\n"
 
       "light light0 = light(\n"
-      "  vec4(1.0, 1.0, 1.0, 0.0),\n"
+      "  vec4(3.0, 0.0, 0.0, 0.0),\n"
       "  vec4(0.2, 0.2, 0.2, 1.0),\n"
       "  vec4(1.0, 0.8, 0.8, 1.0),\n"
       "  vec4(0.6, 0.6, 0.6, 1.0)\n"
@@ -205,6 +260,7 @@ create_diffuse_specular_material (void)
 
       /* post */
       NULL);
+
   cogl_snippet_set_replace (snippet,
       "vec4 final_color = light0.ambient * cogl_color_in;\n"
 
@@ -277,11 +333,12 @@ main (int argc, char **argv)
   es_entity_add_component (&cube.entities[0], component);
 
 
-  /* sphere */
+  /* a second, more interesting, entity */
   es_entity_init (&cube.entities[1]);
 
   pipeline2 = cogl_pipeline_copy (pipeline1);
   cogl_pipeline_set_color4f (pipeline2, 0.0f, 0.1f, 5.0f, 1.0f);
+
   component = es_mesh_renderer_new_from_file ("suzanne.ply", pipeline2);
 
   es_entity_add_component (&cube.entities[1], component);
@@ -293,13 +350,14 @@ main (int argc, char **argv)
                                &cube.entities[1],
                                FLOAT_GETTER (es_entity_get_x),
                                FLOAT_SETTER (es_entity_set_x),
-                               2.0f);
+                               5.0f);
   es_animation_clip_start (ES_ANIMATION_CLIP (component));
 
   es_entity_add_component (&cube.entities[1], component);
 #endif
 
   /* animate the rotation of the ply object */
+#if 0
   {
     CoglEuler end_angles;
     CoglQuaternion end_rotation;
@@ -307,7 +365,7 @@ main (int argc, char **argv)
     cogl_euler_init (&end_angles, 90, -90, 0);
     cogl_quaternion_init_from_euler (&end_rotation, &end_angles);
 
-    component = es_animation_clip_new (2000);
+    component = es_animation_clip_new (5000);
     es_animation_clip_add_quaternion (ES_ANIMATION_CLIP (component),
                                       &cube.entities[1],
                                       QUATERNION_GETTER (es_entity_get_rotation),
@@ -317,6 +375,48 @@ main (int argc, char **argv)
     es_animation_clip_start (ES_ANIMATION_CLIP (component));
 
     es_entity_add_component (&cube.entities[1], component);
+  }
+#endif
+
+  /* setup shadow mapping */
+  {
+    CoglTexture2D *color_buffer;
+    GError *error = NULL;
+
+    color_buffer = cogl_texture_2d_new_with_size (context,
+                                                  512, 512,
+                                                  COGL_PIXEL_FORMAT_ANY,
+                                                  &error);
+    if (error)
+      g_critical ("could not create texture: %s", error->message);
+
+    cube.shadow_color_buffer = color_buffer;
+
+    /* XXX: Right now there's no way to disable rendering to the the color
+     * buffer. */
+    cube.shadow_fb =
+        cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer));
+
+    /* directional light -> orthographic perspective */
+    cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (cube.shadow_fb),
+                                   5.f, 5.f, -5.f, -5.f, -5.f, 5.f);
+#if 0
+    cogl_framebuffer_perspective (COGL_FRAMEBUFFER (cube.shadow_fb),
+                                  90.f, /* fov */
+                                  1.f,  /* aspect ratio */
+                                  .1f,  /* near */
+                                  100); /* far */
+#endif
+
+    /* retrieve the depth texture */
+    cogl_framebuffer_enable_depth_texture (COGL_FRAMEBUFFER (cube.shadow_fb),
+                                           TRUE);
+    cube.shadow_map =
+      cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (cube.shadow_fb));
+
+    if (cube.shadow_fb == COGL_INVALID_HANDLE)
+      g_critical ("could not create offscreen buffer");
+
   }
 
   cogl_object_unref (pipeline1);
