@@ -54,7 +54,6 @@ void
 es_entity_set_y (Entity *entity,
                  float   y)
 {
-
   entity->position.y = y;
   entity_set_dirty (entity);
 }
