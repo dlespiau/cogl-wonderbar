@@ -1,15 +1,32 @@
-== Smaller
+== Cogl
+
+* cogl: could cogl_quaternion_multiply() multiply in place?
+* precise right, top, left, bottom order instead of first/second in
+  cogl_matrix_ortho()
+* add the cogl_color_init_* symbols to the documention
+* cogl_matrix_look_at() behaves like gluLookAt() and multiplies the incoming
+  matrix so you need to give it an identity matrix
+
+== Entity/Components
 
 * Compute the gl_NormalMatrix ourselves
-* Port the mash code to the new AttributesBuffer API
-* cogl: could cogl_quaternion_multiply() multiply in place?
 * expose the easing modes in AnimationClip
+* Port the mash code to the new AttributesBuffer API
+* camera component, setup the scene and paint sequence with it
+* factor the light in its own component
+* create a world object with all the entities
+* organize the entities in a tree (no shit!)
+* fix the directional light transformation
+
+== Shadows
+
+* don't draw the color buffer in the shadow FBO
+* use a specially crafted pipeline to draw into the shadow FBO to reduce
+  the drawing cost (no materials, no lighting, ...)
 
 == Bigger
 
-* camera component, setup the scene and paint sequence with it
 * point light
-* cast shadows (soft?)
 * SSAO
 
 == Write about the learnings
@@ -18,3 +35,4 @@
 * "smooth" vertices
 * entity/components system
 * quaternions
+* shadow mapping
