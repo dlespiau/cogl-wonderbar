@@ -112,6 +112,7 @@ es_animation_clip_new (int32_t duration)
   AnimationClip *renderer;
 
   renderer = g_slice_new0 (AnimationClip);
+  renderer->component.type = ES_COMPONENT_TYPE_ANIMATION_CLIP;
   renderer->component.update = es_animation_clip_update;
   renderer->duration = duration * 1000;
 

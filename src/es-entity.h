@@ -29,8 +29,17 @@
 typedef struct _component Component;
 typedef struct _entity    Entity;
 
+typedef enum
+{
+  ES_COMPONENT_TYPE_ANIMATION_CLIP,
+  ES_COMPONENT_TYPE_MESH_RENDERER,
+
+  ES_N_COMPNONENTS
+} ComponentType;
+
 struct _component
 {
+  ComponentType type;
   void (*start)   (Component *component);
   void (*update)  (Component *component, int64_t time);
   void (*draw)    (Component *component);
@@ -88,5 +97,7 @@ void                    es_entity_translate     (Entity *entity,
                                                  float   ty);
 void                    es_entity_rotate_x_axis (Entity *entity,
                                                  float   x_angle);
+
+CoglPipeline *          es_entity_get_pipeline  (Entity *entity);
 
 #endif /* __ES_ENTITY_H__ */

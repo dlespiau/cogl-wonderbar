@@ -17,6 +17,7 @@
  * License along with this library. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "components/es-mesh-renderer.h"
 #include "es-entity.h"
 
 void es_entity_init (Entity *entity)
@@ -167,4 +168,20 @@ es_entity_rotate_x_axis (Entity *entity,
   cogl_quaternion_free (current);
 
   entity_set_dirty (entity);
+}
+
+CoglPipeline *
+es_entity_get_pipeline (Entity *entity)
+{
+  int i;
+
+  for (i = 0; i < entity->components->len; i++)
+    {
+      Component *component = g_ptr_array_index (entity->components, i);
+
+      if (component->type == ES_COMPONENT_TYPE_MESH_RENDERER)
+        return ES_MESH_RENDERER (component)->pipeline;
+    }
+
+    return NULL;
 }

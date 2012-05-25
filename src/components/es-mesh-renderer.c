@@ -264,6 +264,7 @@ es_mesh_renderer_new (void)
   MeshRenderer *renderer;
 
   renderer = g_slice_new0 (MeshRenderer);
+  renderer->component.type = ES_COMPONENT_TYPE_MESH_RENDERER;
   renderer->component.draw = es_mesh_renderer_draw;
 
   return renderer;
