@@ -39,7 +39,6 @@
 #include <glib-object.h>
 #include <string.h>
 #include <cogl/cogl.h>
-#include <clutter/clutter.h>
 
 #include "mash-data.h"
 #include "mash-ply-loader.h"
@@ -78,16 +77,10 @@ mash_data_free_vbos (MashData *self)
 {
   MashDataPrivate *priv = self->priv;
 
-  if (priv->loaded_data.vertices_vbo)
+  if (priv->loaded_data.primitive)
     {
-      cogl_handle_unref (priv->loaded_data.vertices_vbo);
-      priv->loaded_data.vertices_vbo = NULL;
-    }
-
-  if (priv->loaded_data.indices)
-    {
-      cogl_handle_unref (priv->loaded_data.indices);
-      priv->loaded_data.indices = NULL;
+      cogl_object_unref (priv->loaded_data.primitive);
+      priv->loaded_data.primitive = NULL;
     }
 }
 
@@ -185,35 +178,22 @@ mash_data_load (MashData *self,
 }
 
 /**
- * mash_data_render:
+ * mash_data_get_primitive:
  * @self: A #MashData instance
  *
- * Renders the data contained in the model to the Clutter
- * scene. The current Cogl source material will be used to affect the
- * appearance of the model. This function is not usually called
- * directly but instead the #MashData instance is added to a
- * #MashModel and this function will be automatically called by
- * the paint method of the model.
+ * Returns: A #CoglPrimitive
  */
-void
-mash_data_render (MashData *self)
+CoglPrimitive *
+mash_data_get_primitive (MashData *self)
 {
   MashDataPrivate *priv;
 
-  g_return_if_fail (MASH_IS_DATA (self));
+  g_return_val_if_fail (MASH_IS_DATA (self), NULL);
 
   priv = self->priv;
 
   /* Silently fail if we didn't load any data */
-  if (priv->loaded_data.vertices_vbo == NULL || priv->loaded_data.indices == NULL)
-    return;
-
-  cogl_vertex_buffer_draw_elements (priv->loaded_data.vertices_vbo,
-                                    COGL_VERTICES_MODE_TRIANGLES,
-                                    priv->loaded_data.indices,
-                                    priv->loaded_data.min_index,
-                                    priv->loaded_data.max_index,
-                                    0, priv->loaded_data.n_triangles * 3);
+  return priv->loaded_data.primitive;
 }
 
 /**
@@ -231,8 +211,8 @@ mash_data_render (MashData *self)
  */
 void
 mash_data_get_extents (MashData *self,
-                       ClutterVertex *min_vertex,
-                       ClutterVertex *max_vertex)
+                       CoglVertexP3 *min_vertex,
+                       CoglVertexP3 *max_vertex)
 {
   MashDataPrivate *priv = self->priv;
 

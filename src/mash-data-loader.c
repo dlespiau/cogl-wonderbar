@@ -29,7 +29,6 @@
 #include <glib-object.h>
 #include <string.h>
 #include <cogl/cogl.h>
-#include <clutter/clutter.h>
 
 #include "mash-data-loader.h"
 

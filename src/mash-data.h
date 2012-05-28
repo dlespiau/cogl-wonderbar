@@ -19,7 +19,7 @@
 #ifndef __MASH_DATA_H__
 #define __MASH_DATA_H__
 
-#include <clutter/clutter.h>
+#include <glib-object.h>
 
 G_BEGIN_DECLS
 
@@ -147,13 +147,13 @@ gboolean mash_data_load (MashData *self,
                          const gchar *filename,
                          GError **error);
 
-void mash_data_render (MashData *self);
+CoglPrimitive * mash_data_get_primitive (MashData *self);
 
 GQuark mash_data_error_quark (void);
 
 void mash_data_get_extents (MashData *self,
-                            ClutterVertex *min_vertex,
-                            ClutterVertex *max_vertex);
+                            CoglVertexP3 *min_vertex,
+                            CoglVertexP3 *max_vertex);
 
 G_END_DECLS
 

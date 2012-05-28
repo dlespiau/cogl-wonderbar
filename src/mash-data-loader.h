@@ -20,7 +20,6 @@
 #define __MASH_DATA_LOADER_H__
 
 #include <cogl/cogl.h>
-#include <clutter/clutter.h>
 
 #include "mash-data.h"
 
@@ -91,13 +90,10 @@ struct _MashDataLoader
  */
 struct _MashDataLoaderData
 {
-  CoglHandle vertices_vbo;
-  CoglHandle indices;
-  guint min_index, max_index;
-  guint n_triangles;
+  CoglPrimitive *primitive;
 
   /* Bounding cuboid of the data */
-  ClutterVertex min_vertex, max_vertex;
+  CoglVertexP3 min_vertex, max_vertex;
 };
 
 GType mash_data_loader_get_type (void) G_GNUC_CONST;
