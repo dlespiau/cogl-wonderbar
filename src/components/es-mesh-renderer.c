@@ -161,10 +161,10 @@ create_cube_primitive (void)
  *      +--------+
  */
 
-#define pos_a    10.0f, -2.0f, -10.0f
-#define pos_b   -10.0f, -2.0f, -10.0f
-#define pos_c   -10.0f, -2.0f,  10.0f
-#define pos_d    10.0f, -2.0f,  10.0f
+#define pos_a    10.0f, -1.0f, -10.0f
+#define pos_b   -10.0f, -1.0f, -10.0f
+#define pos_c   -10.0f, -1.0f,  10.0f
+#define pos_d    10.0f, -1.0f,  10.0f
 
 #define norm     1.0f,  1.0f, 1.0f
 
