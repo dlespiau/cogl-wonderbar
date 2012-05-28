@@ -30,4 +30,7 @@ es_get_cogl_context (void);
 int64_t
 es_get_current_time (void);
 
+CoglFramebuffer *
+es_get_draw_framebuffer (void);
+
 #endif /* __MAIN_H__ */

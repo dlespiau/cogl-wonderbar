@@ -243,7 +243,7 @@ es_mesh_renderer_draw (Component *component)
   MeshRenderer *renderer = ES_MESH_RENDERER (component);
   CoglFramebuffer *fb;
 
-  fb = cogl_get_draw_framebuffer ();
+  fb = es_get_draw_framebuffer ();
 
   if (renderer->primitive)
     {
@@ -253,8 +253,12 @@ es_mesh_renderer_draw (Component *component)
     }
   else if (renderer->mesh_data)
     {
-      cogl_set_source (renderer->pipeline);
-      mash_data_render (renderer->mesh_data);
+      CoglPrimitive *primitive;
+
+      primitive = mash_data_get_primitive (renderer->mesh_data);
+      cogl_framebuffer_draw_primitive (fb,
+                                       renderer->pipeline,
+                                       primitive);
     }
 }
 

@@ -3,7 +3,6 @@ noinst_LTLIBRARIES = librply.la
 experimental_cflags = 				\
 	-DCOGL_ENABLE_EXPERIMENTAL_API		\
 	-DCOGL_ENABLE_EXPERIMENTAL_2_0_API	\
-	-DCLUTTER_ENABLE_EXPERIMENTAL_API	\
 	$(NULL)
 
 librply_la_SOURCES = rply/rply.c rply/rply.h
@@ -32,8 +31,10 @@ wonderbar_SOURCES = 			\
 wonderbar_CFLAGS  = 		\
 	-Isrc			\
 	$(WARNING_CFLAGS) 	\
-	$(CLUTTER_CFLAGS) 	\
+	$(GLIB_CFLAGS)		\
+	$(SDL_CFLAGS) 		\
+	$(COGL_CFLAGS)		\
 	$(experimental_cflags)	\
 	$(NULL)
 
-wonderbar_LDADD   = librply.la $(CLUTTER_LIBS)
+wonderbar_LDADD   = librply.la $(GLIB_LIBS) $(SDL_LIBS) $(COGL_LIBS)

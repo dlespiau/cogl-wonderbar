@@ -21,15 +21,15 @@
 #include <stdlib.h>
 
 #include <cogl/cogl.h>
-#include <clutter/clutter.h>
+#include <SDL.h>
 
 #include "es-entity.h"
 #include "es-components.h"
 
 typedef struct
 {
-  ClutterActor *stage;
-  ClutterTimeline *timeline;
+  CoglFramebuffer *fb;
+  gboolean quit;
 
   Entity entities[3];
 
@@ -39,7 +39,9 @@ typedef struct
   CoglTexture   *shadow_map;
 } Cube;
 
+static Cube cube;
 static CoglContext *context;
+static GTimer *timer;
 
 CoglContext *
 es_get_cogl_context (void)
@@ -47,7 +49,11 @@ es_get_cogl_context (void)
   return context;
 }
 
-static GTimer *timer;
+CoglFramebuffer *
+es_get_draw_framebuffer (void)
+{
+  return cube.fb;
+}
 
 /* in micro seconds  */
 int64_t
@@ -80,13 +86,9 @@ draw_entities (Cube *cube,
 }
 
 static void
-paint (ClutterActor *stage,
-       gpointer      data)
+draw (Cube *cube)
 {
-  Cube *cube = data;
-  CoglFramebuffer *fb;
-  int width;
-  int height, i;
+  int i;
   int64_t time; /* micro seconds */
   CoglMatrix shadow_transform;
   CoglFramebuffer *shadow_fb;
@@ -123,18 +125,14 @@ paint (ClutterActor *stage,
 
   /* setup the base tranformation matrix, we use clutter so the transformation
    * is relative to the default one in clutter */
-  fb = cogl_get_draw_framebuffer ();
-  width = cogl_framebuffer_get_width (fb);
-  height = cogl_framebuffer_get_height (fb);
 
-  cogl_framebuffer_clear4f (fb,
+  cogl_framebuffer_clear4f (cube->fb,
                             COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
                             0, 0, 0, 1);
 
-  cogl_framebuffer_push_matrix (fb);
+  cogl_framebuffer_push_matrix (cube->fb);
 
-  cogl_framebuffer_translate (fb, width / 2, height / 2, 0);
-  cogl_framebuffer_scale (fb, 75, -75, 75);
+  cogl_framebuffer_translate (cube->fb, 0.f, 0.f, -10.f);
 
   /* update entities */
   time = es_get_current_time ();
@@ -147,26 +145,20 @@ paint (ClutterActor *stage,
     }
 
   /* draw entities */
-  draw_entities (cube, fb);
+  draw_entities (cube, cube->fb);
 
   /* draw the color and depth buffers of the shadow FBO to debug it */
+#if 0
   cogl_set_source_texture (COGL_TEXTURE (cube->shadow_color_buffer));
   cogl_rectangle (-4, 3, -2, 1);
 
   cogl_set_source_texture (COGL_TEXTURE (cube->shadow_map));
   cogl_rectangle (-4, 1, -2, -1);
+#endif
 
-  cogl_framebuffer_pop_matrix (fb);
-}
+  cogl_framebuffer_pop_matrix (cube->fb);
 
-static void
-on_new_frame (ClutterTimeline *timeline,
-              gint             msecs,
-              gpointer         data)
-{
-  Cube *cube = data;
-
-  clutter_actor_queue_redraw (cube->stage);
+  cogl_onscreen_swap_buffers (COGL_ONSCREEN (cube->fb));
 }
 
 CoglPipeline *
@@ -289,40 +281,118 @@ create_diffuse_specular_material (void)
   return pipeline;
 }
 
+static void
+handle_event (Cube *cube, SDL_Event *event)
+{
+  switch (event->type)
+    {
+    case SDL_VIDEOEXPOSE:
+      draw (cube);
+      break;
+
+    case SDL_MOUSEMOTION:
+      {
+        g_message ("motion %dx%d", event->motion.x, event->motion.y);
+      }
+      break;
+
+    case SDL_QUIT:
+      cube->quit = TRUE;
+      break;
+    }
+}
+
+static Uint32
+timer_handler (Uint32 interval, void *user_data)
+{
+  static const SDL_UserEvent dummy_event =
+    {
+      SDL_USEREVENT
+    };
+
+  /* Post an event to wake up from SDL_WaitEvent */
+  SDL_PushEvent ((SDL_Event *) &dummy_event);
+
+  return 0;
+}
+
+static gboolean
+wait_event_with_timeout (Cube *cube, SDL_Event *event, gint64 timeout)
+{
+  if (timeout == -1)
+    {
+      if (SDL_WaitEvent (event))
+        return TRUE;
+      else
+        {
+          cube->quit = TRUE;
+          return FALSE;
+        }
+    }
+  else if (timeout == 0)
+    return SDL_PollEvent (event);
+  else
+    {
+      gboolean ret;
+      /* Add a timer so that we can wake up the event loop */
+      SDL_TimerID timer_id =
+        SDL_AddTimer (timeout / 1000, timer_handler, cube);
+
+      if (SDL_WaitEvent (event))
+        ret = TRUE;
+      else
+        {
+          cube->quit = TRUE;
+          ret = FALSE;
+        }
+
+      SDL_RemoveTimer (timer_id);
+
+      return ret;
+    }
+}
+
 int
 main (int argc, char **argv)
 {
-  Cube cube;
-  ClutterBackend *backend;
+  CoglOnscreen *onscreen;
+  GError *error = NULL;
   Component *component;
   CoglPipeline *pipeline1, *pipeline2;
-
-  /*
-   * Setup Clutter
-   */
-  if (clutter_init (&argc, &argv) != CLUTTER_INIT_SUCCESS)
-    {
-      g_print ("Could not initialize clutter");
-      return EXIT_FAILURE;
-    }
+  SDL_Event event;
 
   memset (&cube, 0, sizeof(Cube));
 
+  /*
+   * Setup SDL/Cogl
+   */
+
+  /* force the SDL winsys */
+  context = cogl_sdl_context_new (SDL_USEREVENT, &error);
+  if (!context)
+    {
+      fprintf (stderr, "Failed to create context: %s\n", error->message);
+      return 1;
+    }
+
+  SDL_InitSubSystem (SDL_INIT_TIMER);
+
+  onscreen = cogl_onscreen_new (context, 800, 600);
+  cube.fb = COGL_FRAMEBUFFER (onscreen);
+  cogl_framebuffer_perspective (COGL_FRAMEBUFFER (cube.fb),
+                                60.f, /* fov */
+                                (float) 800 / 600,  /* aspect ratio */
+                                .1f,  /* near */
+                                100); /* far */
+
+  cogl_onscreen_show (onscreen);
+
+  /* timer for the world time */
   timer = g_timer_new ();
 
-  cube.stage = clutter_stage_new ();
-  g_signal_connect_after (cube.stage, "paint", G_CALLBACK (paint), &cube);
-
-  cube.timeline = clutter_timeline_new (5000);
-  g_signal_connect (cube.timeline, "new-frame",
-                    G_CALLBACK (on_new_frame), &cube);
-
   /*
-   * Setup CoglObjects to render our plane and cube
+   * Setup the entities to draw
    */
-  backend = clutter_get_default_backend ();
-  context = clutter_backend_get_cogl_context (backend);
-
 
   /* plane */
   es_entity_init (&cube.entities[0]);
@@ -331,7 +401,6 @@ main (int argc, char **argv)
   component = es_mesh_renderer_new_from_template ("plane", pipeline1);
 
   es_entity_add_component (&cube.entities[0], component);
-
 
   /* a second, more interesting, entity */
   es_entity_init (&cube.entities[1]);
@@ -343,7 +412,7 @@ main (int argc, char **argv)
 
   es_entity_add_component (&cube.entities[1], component);
 
-  /* animate the x property of the sphere */
+  /* animate the x property of the second entity */
 #if 0
   component = es_animation_clip_new (2000);
   es_animation_clip_add_float (ES_ANIMATION_CLIP (component),
@@ -356,7 +425,7 @@ main (int argc, char **argv)
   es_entity_add_component (&cube.entities[1], component);
 #endif
 
-  /* animate the rotation of the ply object */
+  /* animate the rotation of the second entity */
 #if 0
   {
     CoglEuler end_angles;
@@ -401,11 +470,6 @@ main (int argc, char **argv)
     cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (cube.shadow_fb),
                                    5.f, 5.f, -5.f, -5.f, -5.f, 5.f);
 #if 0
-    cogl_framebuffer_perspective (COGL_FRAMEBUFFER (cube.shadow_fb),
-                                  90.f, /* fov */
-                                  1.f,  /* aspect ratio */
-                                  .1f,  /* near */
-                                  100); /* far */
 #endif
 
     /* retrieve the depth texture */
@@ -414,7 +478,7 @@ main (int argc, char **argv)
     cube.shadow_map =
       cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (cube.shadow_fb));
 
-    if (cube.shadow_fb == COGL_INVALID_HANDLE)
+    if (cube.shadow_fb == NULL)
       g_critical ("could not create offscreen buffer");
 
   }
@@ -422,13 +486,33 @@ main (int argc, char **argv)
   cogl_object_unref (pipeline1);
   cogl_object_unref (pipeline2);
 
-  clutter_actor_show_all (cube.stage);
-
-  clutter_timeline_start (cube.timeline);
-
   g_timer_start (timer);
 
-  clutter_main ();
+  /*
+   * Main loop
+   */
+
+  while (!cube.quit)
+    {
+      CoglPollFD *poll_fds;
+      int n_poll_fds;
+      gint64 timeout;
+
+      cogl_poll_get_info (context, &poll_fds, &n_poll_fds, &timeout);
+
+      /* It's difficult to wait for file descriptors using the SDL
+         event mechanism, but it the SDL winsys is documented that it
+         will never require this so we can assert that there are no
+         fds */
+      g_assert (n_poll_fds == 0);
+
+      if (wait_event_with_timeout (&cube, &event, timeout))
+        do
+          handle_event (&cube, &event);
+        while (SDL_PollEvent (&event));
+
+      cogl_poll_dispatch (context, poll_fds, n_poll_fds);
+    }
 
   return EXIT_SUCCESS;
 }

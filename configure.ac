@@ -24,8 +24,9 @@ AS_COMPILER_FLAGS([WARNING_CFLAGS],
 		   -Winit-self -Wdeclaration-after-statement -Wvla
 		   -Wpointer-arith"])
 
-PKG_CHECK_MODULES([GLIB],    [glib-2.0 >= 2.28])
-PKG_CHECK_MODULES([CLUTTER], [clutter-1.0 >= 1.10])
+PKG_CHECK_MODULES([GLIB], [glib-2.0 >= 2.28])
+PKG_CHECK_MODULES([SDL], [sdl])
+PKG_CHECK_MODULES([COGL], [cogl2])
 
 AC_OUTPUT([
   src/Makefile
