@@ -3,7 +3,7 @@ AC_PREREQ(2.59)
 AC_INIT([wonderbar], [0.0.1], [damien.lespiau@gmail.com])
 AC_CONFIG_MACRO_DIR([build])
 AC_CONFIG_AUX_DIR([build])
-AC_CONFIG_SRCDIR([src/main.c])
+AC_CONFIG_SRCDIR([src/es-main.c])
 AC_CONFIG_HEADERS([config.h])
 
 # automake
