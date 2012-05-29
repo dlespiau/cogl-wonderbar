@@ -76,8 +76,8 @@ draw_entities (Cube *cube,
       cogl_framebuffer_push_matrix (fb);
 
       entity = &cube->entities[i];
-      transform = es_entity_get_transform (entity);
 
+      transform = es_entity_get_transform (entity);
       cogl_framebuffer_transform (fb, transform);
 
       es_entity_draw (entity, fb);
@@ -481,7 +481,6 @@ main (int argc, char **argv)
 
     if (cube.shadow_fb == NULL)
       g_critical ("could not create offscreen buffer");
-
   }
 
   cogl_object_unref (pipeline1);
