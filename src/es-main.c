@@ -88,8 +88,27 @@ create_texture_pipeline (CoglTexture *texture)
 
 
 static void
-draw_entities (Cube *cube,
-               CoglFramebuffer *fb)
+compute_light_shadow_matrix (CoglMatrix *light_matrix,
+                             CoglMatrix *light_projection,
+                             CoglMatrix *light_view)
+{
+  /* Move the unit cube from [-1,1] to [0,1] */
+  float bias[16] = {
+    .5f, .0f, .0f, .0f,
+    .0f, .5f, .0f, .0f,
+    .0f, .0f, .5f, .0f,
+    .5f, .5f, .5f, 1.f
+  };
+
+  cogl_matrix_init_from_array (light_matrix, bias);
+  cogl_matrix_multiply (light_matrix, light_matrix, light_projection);
+  cogl_matrix_multiply (light_matrix, light_matrix, light_view);
+}
+
+static void
+draw_entities (Cube            *cube,
+               CoglFramebuffer *fb,
+               gboolean         shadow_pass)
 {
   int i;
 
@@ -98,9 +117,12 @@ draw_entities (Cube *cube,
       const CoglMatrix *transform;
       Entity *entity;
 
-      cogl_framebuffer_push_matrix (fb);
-
       entity = &cube->entities[i];
+
+      if (shadow_pass && !entity_cast_shadow (entity))
+        continue;
+
+      cogl_framebuffer_push_matrix (fb);
 
       transform = es_entity_get_transform (entity);
       cogl_framebuffer_transform (fb, transform);
@@ -134,13 +156,45 @@ draw (Cube *cube)
   /* the light position is hardcoded for now */
   cogl_matrix_init_identity (&shadow_transform);
   cogl_matrix_look_at (&shadow_transform,
-                       0.f, 1.f, 10.f,     /* light position */
+                       2., 3.f, -10.f,    /* light position */
                        .0f, 0.f, 0.f,     /* direction to look at */
                        .0f, 1.f, 0.f);    /* world up */
 
   cogl_framebuffer_set_modelview_matrix (shadow_fb, &shadow_transform);
 
-  draw_entities (cube, shadow_fb);
+  /* update the light matrix uniform */
+  {
+    CoglMatrix light_shadow_matrix, light_projection, light_view;
+    CoglPipeline *pipeline;
+
+    int location;
+
+    cogl_framebuffer_get_projection_matrix (shadow_fb, &light_projection);
+    cogl_framebuffer_get_modelview_matrix (shadow_fb, &light_view);
+    compute_light_shadow_matrix (&light_shadow_matrix,
+                                 &light_projection,
+                                 &light_view);
+
+    pipeline = es_entity_get_pipeline (&cube->entities[0]);
+    location = cogl_pipeline_get_uniform_location (pipeline,
+                                                   "light_shadow_matrix");
+    cogl_pipeline_set_uniform_matrix (pipeline,
+                                      location,
+                                      4, 1,
+                                      FALSE,
+                                      cogl_matrix_get_array (&light_shadow_matrix));
+
+    pipeline = es_entity_get_pipeline (&cube->entities[1]);
+    location = cogl_pipeline_get_uniform_location (pipeline,
+                                                   "light_shadow_matrix");
+    cogl_pipeline_set_uniform_matrix (pipeline,
+                                      location,
+                                      4, 1,
+                                      FALSE,
+                                      cogl_matrix_get_array (&light_shadow_matrix));
+  }
+
+  draw_entities (cube, shadow_fb, TRUE /* shadow pass */);
 
   cogl_pop_framebuffer ();
 
@@ -170,7 +224,7 @@ draw (Cube *cube)
     }
 
   /* draw entities */
-  draw_entities (cube, cube->fb);
+  draw_entities (cube, cube->fb, FALSE /* shadow pass */);
 
   /* draw the color and depth buffers of the shadow FBO to debug them */
   cogl_framebuffer_draw_rectangle (cube->fb, cube->shadow_color_tex,
@@ -222,7 +276,9 @@ create_diffuse_specular_material (void)
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_VERTEX,
 
       /* definitions */
+      "uniform mat4 light_shadow_matrix;\n"
       "varying vec3 normal_direction, light_direction, eye_direction;\n"
+      "varying vec4 shadow_coords;\n"
 
       "struct light\n"
       "{\n"
@@ -238,6 +294,8 @@ create_diffuse_specular_material (void)
       "normal_direction = normalize(gl_NormalMatrix * cogl_normal_in);\n"
       "light_direction  = normalize(vec3(light0.position));\n"
       "eye_direction    = -vec3(cogl_modelview_matrix * cogl_position_in);\n"
+
+      "shadow_coords = light_shadow_matrix * cogl_position_in;\n"
   );
 
   cogl_pipeline_add_snippet (pipeline, snippet);
@@ -294,7 +352,15 @@ create_diffuse_specular_material (void)
       "  final_color += light0.specular * vec4(.6, .6, .6, 1.0) * specular;\n"
       "}\n"
 
-      "cogl_color_out = final_color;\n"
+      "shadow_coords_d = shadow_coords / shadow_coords.w;\n"
+      "cogl_texel7 =  cogl_texture_lookup7 (cogl_sampler7, cogl_tex_coord_in[0]);\n"
+      "float distance_from_light = cogl_texel7.z;\n"
+      "float shadow = 1.0;\n"
+      "if (shadow_coords.w > 0.0 && distance_from_light < shadow_coords_d.z)\n"
+      "    shadow = 0.5;\n"
+
+      "cogl_color_out = shadow * final_color;\n"
+      //"cogl_color_out = cogl_texel7;\n"
   );
 
   cogl_pipeline_add_snippet (pipeline, snippet);
@@ -381,6 +447,7 @@ main (int argc, char **argv)
   GError *error = NULL;
   Component *component;
   CoglPipeline *pipeline1, *pipeline2;
+  CoglSnippet *snippet;
   SDL_Event event;
 
   memset (&cube, 0, sizeof(Cube));
@@ -426,19 +493,86 @@ main (int argc, char **argv)
   timer = g_timer_new ();
 
   /*
-   * Setup the entities to draw
+   * Setup shadow mapping
+   */
+  {
+    CoglTexture2D *color_buffer;
+    GError *error = NULL;
+
+    color_buffer = cogl_texture_2d_new_with_size (context,
+                                                  512, 512,
+                                                  COGL_PIXEL_FORMAT_ANY,
+                                                  &error);
+    if (error)
+      g_critical ("could not create texture: %s", error->message);
+
+    cube.shadow_color = color_buffer;
+
+    /* XXX: Right now there's no way to disable rendering to the the color
+     * buffer. */
+    cube.shadow_fb =
+        cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer));
+
+    /* directional light -> orthographic perspective */
+#if 0
+    cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (cube.shadow_fb),
+                                   10.f, 10.f, -10.f, -10.f, -15.f, 15.f);
+
+#endif
+    cogl_framebuffer_perspective (COGL_FRAMEBUFFER (cube.shadow_fb),
+                                  60.f, /* fov */
+                                  1.0,  /* aspect ratio */
+                                  3.f,  /* near */
+                                  20); /* far */
+
+    /* retrieve the depth texture */
+    cogl_framebuffer_enable_depth_texture (COGL_FRAMEBUFFER (cube.shadow_fb),
+                                           TRUE);
+    cube.shadow_map =
+      cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (cube.shadow_fb));
+
+    if (cube.shadow_fb == NULL)
+      g_critical ("could not create offscreen buffer");
+  }
+
+  /* Hook the shadow sampling */
+  pipeline1 = create_diffuse_specular_material ();
+  cogl_pipeline_set_layer_texture (pipeline1, 7, cube.shadow_map);
+  cogl_pipeline_set_layer_wrap_mode_s (pipeline1,
+                                       7,
+                                       COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
+  cogl_pipeline_set_layer_wrap_mode_t (pipeline1,
+                                       7,
+                                       COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
+
+  snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_TEXTURE_LOOKUP,
+                              /* declarations */
+                              "varying vec4 shadow_coords;\n"
+                              "vec4 shadow_coords_d;\n",
+                              /* post */
+                              "");
+
+  cogl_snippet_set_replace (snippet,
+                            "cogl_texel = texture2D(cogl_sampler7, shadow_coords_d.st);\n");
+
+  cogl_pipeline_add_layer_snippet (pipeline1, 7, snippet);
+  cogl_object_unref (snippet);
+
+  /*
+   * Setup CoglObjects to render our plane and cube
    */
 
   /* plane */
   es_entity_init (&cube.entities[0]);
+  es_entity_set_cast_shadow (&cube.entities[0], FALSE);
 
-  pipeline1 = create_diffuse_specular_material ();
   component = es_mesh_renderer_new_from_template ("plane", pipeline1);
 
   es_entity_add_component (&cube.entities[0], component);
 
   /* a second, more interesting, entity */
   es_entity_init (&cube.entities[1]);
+  es_entity_set_cast_shadow (&cube.entities[1], TRUE);
 
   pipeline2 = cogl_pipeline_copy (pipeline1);
   cogl_pipeline_set_color4f (pipeline2, 0.0f, 0.1f, 5.0f, 1.0f);
@@ -481,47 +615,6 @@ main (int argc, char **argv)
     es_entity_add_component (&cube.entities[1], component);
   }
 #endif
-
-  /* setup shadow mapping */
-  {
-    CoglTexture2D *color_buffer;
-    GError *error = NULL;
-
-    color_buffer = cogl_texture_2d_new_with_size (context,
-                                                  512, 512,
-                                                  COGL_PIXEL_FORMAT_ANY,
-                                                  &error);
-    if (error)
-      g_critical ("could not create texture: %s", error->message);
-
-    cube.shadow_color = color_buffer;
-
-    /* XXX: Right now there's no way to disable rendering to the the color
-     * buffer. */
-    cube.shadow_fb =
-        cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer));
-
-    /* directional light -> orthographic perspective */
-#if 0
-    cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (cube.shadow_fb),
-                                   10.f, 10.f, -10.f, -10.f, -15.f, 15.f);
-
-#endif
-    cogl_framebuffer_perspective (COGL_FRAMEBUFFER (cube.shadow_fb),
-                                  60.f, /* fov */
-                                  1.0,  /* aspect ratio */
-                                  3.f,  /* near */
-                                  20); /* far */
-
-    /* retrieve the depth texture */
-    cogl_framebuffer_enable_depth_texture (COGL_FRAMEBUFFER (cube.shadow_fb),
-                                           TRUE);
-    cube.shadow_map =
-      cogl_framebuffer_get_depth_texture (COGL_FRAMEBUFFER (cube.shadow_fb));
-
-    if (cube.shadow_fb == NULL)
-      g_critical ("could not create offscreen buffer");
-  }
 
   /* create the pipelines to display the shadow color and depth textures */
   cube.shadow_color_tex =
