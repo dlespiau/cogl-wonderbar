@@ -26,6 +26,10 @@
 #include "es-entity.h"
 #include "es-components.h"
 
+#ifndef COGL_VERSION_CHECK
+#define COGL_VERSION_CHECK(a,b,c) (FALSE)
+#endif
+
 typedef struct
 {
   CoglFramebuffer *fb;
@@ -168,19 +172,7 @@ draw (Cube *cube)
   /* draw entities */
   draw_entities (cube, cube->fb);
 
-  /* draw the color and depth buffers of the shadow FBO to debug it */
-#if 0
-  cogl_push_framebuffer (cube->fb);
-  cogl_set_source_texture (COGL_TEXTURE (cube->shadow_color));
-  cogl_rectangle (-4, 3, -2, 1);
-
-  cogl_set_source_texture (COGL_TEXTURE (cube->shadow_map));
-  cogl_rectangle (-4, 1, -2, -1);
-  cogl_pop_framebuffer ();
-#endif
-
   /* draw the color and depth buffers of the shadow FBO to debug them */
-
   cogl_framebuffer_draw_rectangle (cube->fb, cube->shadow_color_tex,
                                    -4, 3, -2, 1);
   cogl_framebuffer_draw_rectangle (cube->fb, cube->shadow_map_tex,
@@ -398,7 +390,20 @@ main (int argc, char **argv)
    */
 
   /* force the SDL winsys */
+#if COGL_VERSION_CHECK (1, 99, 0)
   context = cogl_sdl_context_new (SDL_USEREVENT, &error);
+#else
+    {
+    CoglRenderer *renderer;
+    CoglDisplay *display;
+
+
+    renderer = cogl_renderer_new ();
+    cogl_renderer_set_winsys_id (renderer, COGL_WINSYS_ID_SDL);
+    display = cogl_display_new (renderer, NULL);
+    context = cogl_context_new (display, &error);
+  }
+#endif
   if (!context)
     {
       fprintf (stderr, "Failed to create context: %s\n", error->message);
