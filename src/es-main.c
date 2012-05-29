@@ -35,8 +35,11 @@ typedef struct
 
   /* shadow mapping */
   CoglOffscreen *shadow_fb;
-  CoglTexture2D *shadow_color_buffer;
+  CoglTexture2D *shadow_color;
   CoglTexture   *shadow_map;
+
+  CoglPipeline *shadow_color_tex;
+  CoglPipeline *shadow_map_tex;
 } Cube;
 
 static Cube cube;
@@ -61,6 +64,24 @@ es_get_current_time (void)
 {
   return (int64_t) (g_timer_elapsed (timer, NULL) * 1e6);
 }
+
+static CoglPipeline *
+create_texture_pipeline (CoglTexture *texture)
+{
+  static CoglPipeline *template = NULL, *new_pipeline;
+
+  if (G_UNLIKELY (template == NULL))
+    {
+      template = cogl_pipeline_new (context);
+      cogl_pipeline_set_layer_null_texture (template, 0, COGL_TEXTURE_TYPE_2D);
+    }
+
+  new_pipeline = cogl_pipeline_copy (template);
+  cogl_pipeline_set_layer_texture (new_pipeline, 0, texture);
+
+  return new_pipeline;
+}
+
 
 static void
 draw_entities (Cube *cube,
@@ -109,12 +130,11 @@ draw (Cube *cube)
   /* the light position is hardcoded for now */
   cogl_matrix_init_identity (&shadow_transform);
   cogl_matrix_look_at (&shadow_transform,
-                       3.f, 0.f, 2.f,     /* light position */
+                       0.f, 1.f, 10.f,     /* light position */
                        .0f, 0.f, 0.f,     /* direction to look at */
                        .0f, 1.f, 0.f);    /* world up */
 
   cogl_framebuffer_set_modelview_matrix (shadow_fb, &shadow_transform);
-  cogl_framebuffer_scale (shadow_fb, 2, 2, 2);
 
   draw_entities (cube, shadow_fb);
 
@@ -150,12 +170,21 @@ draw (Cube *cube)
 
   /* draw the color and depth buffers of the shadow FBO to debug it */
 #if 0
-  cogl_set_source_texture (COGL_TEXTURE (cube->shadow_color_buffer));
+  cogl_push_framebuffer (cube->fb);
+  cogl_set_source_texture (COGL_TEXTURE (cube->shadow_color));
   cogl_rectangle (-4, 3, -2, 1);
 
   cogl_set_source_texture (COGL_TEXTURE (cube->shadow_map));
   cogl_rectangle (-4, 1, -2, -1);
+  cogl_pop_framebuffer ();
 #endif
+
+  /* draw the color and depth buffers of the shadow FBO to debug them */
+
+  cogl_framebuffer_draw_rectangle (cube->fb, cube->shadow_color_tex,
+                                   -4, 3, -2, 1);
+  cogl_framebuffer_draw_rectangle (cube->fb, cube->shadow_map_tex,
+                                   -4, 1, -2, -1);
 
   cogl_framebuffer_pop_matrix (cube->fb);
 
@@ -460,7 +489,7 @@ main (int argc, char **argv)
     if (error)
       g_critical ("could not create texture: %s", error->message);
 
-    cube.shadow_color_buffer = color_buffer;
+    cube.shadow_color = color_buffer;
 
     /* XXX: Right now there's no way to disable rendering to the the color
      * buffer. */
@@ -468,10 +497,16 @@ main (int argc, char **argv)
         cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer));
 
     /* directional light -> orthographic perspective */
-    cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (cube.shadow_fb),
-                                   5.f, 5.f, -5.f, -5.f, -5.f, 5.f);
 #if 0
+    cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (cube.shadow_fb),
+                                   10.f, 10.f, -10.f, -10.f, -15.f, 15.f);
+
 #endif
+    cogl_framebuffer_perspective (COGL_FRAMEBUFFER (cube.shadow_fb),
+                                  60.f, /* fov */
+                                  1.0,  /* aspect ratio */
+                                  3.f,  /* near */
+                                  20); /* far */
 
     /* retrieve the depth texture */
     cogl_framebuffer_enable_depth_texture (COGL_FRAMEBUFFER (cube.shadow_fb),
@@ -482,6 +517,12 @@ main (int argc, char **argv)
     if (cube.shadow_fb == NULL)
       g_critical ("could not create offscreen buffer");
   }
+
+  /* create the pipelines to display the shadow color and depth textures */
+  cube.shadow_color_tex =
+      create_texture_pipeline (COGL_TEXTURE (cube.shadow_color));
+  cube.shadow_map_tex =
+      create_texture_pipeline (COGL_TEXTURE (cube.shadow_map));
 
   cogl_object_unref (pipeline1);
   cogl_object_unref (pipeline2);
