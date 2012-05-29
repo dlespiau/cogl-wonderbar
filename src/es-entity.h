@@ -48,16 +48,21 @@ struct _component
 typedef enum
 {
   ENTITY_FLAG_NONE,
-  ENTITY_FLAG_DIRTY
+  ENTITY_FLAG_DIRTY,
+  ENTITY_FLAG_CAST_SHADOW
 } EntityFlag;
 
 #define ENTITY_HAS_FLAG(entity,flag)    ((entity)->flags & ENTITY_FLAG_##flag)
 #define ENTITY_SET_FLAG(entity,flag)    ((entity)->flags |= ENTITY_FLAG_##flag)
 #define ENTITY_CLEAR_FLAG(entity,flag)  ((entity)->flags &= ~(ENTITY_FLAG_##flag))
 
+/* DIRTY */
 #define entity_is_dirty(entity)         (ENTITY_HAS_FLAG (entity, DIRTY))
 #define entity_set_dirty(entity)        (ENTITY_SET_FLAG (entity, DIRTY))
 #define entity_clear_dirty(entity)      (ENTITY_CLEAR_FLAG (entity, DIRTY))
+
+/* CAST_SHADOW */
+#define entity_cast_shadow(entity)      (ENTITY_HAS_FLAG (entity, CAST_SHADOW))
 
 /* FIXME:
  *  - directly store the position in the transform matrix?
@@ -100,5 +105,8 @@ void                    es_entity_rotate_x_axis (Entity *entity,
                                                  float   x_angle);
 
 CoglPipeline *          es_entity_get_pipeline  (Entity *entity);
+
+void                    es_entity_set_cast_shadow (Entity   *entity,
+                                                   gboolean  cast_shadow);
 
 #endif /* __ES_ENTITY_H__ */

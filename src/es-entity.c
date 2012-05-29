@@ -186,3 +186,12 @@ es_entity_get_pipeline (Entity *entity)
 
     return NULL;
 }
+
+void es_entity_set_cast_shadow (Entity   *entity,
+                                gboolean  cast_shadow)
+{
+  if (cast_shadow)
+    ENTITY_SET_FLAG (entity, CAST_SHADOW);
+  else
+    ENTITY_CLEAR_FLAG (entity, CAST_SHADOW);
+}
