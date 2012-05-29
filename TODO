@@ -26,6 +26,8 @@
 
 == Bigger
 
+* arcball orientation controller:
+  http://research.cs.wisc.edu/graphics/Courses/559-f2001/Examples/Gl3D/arcball-gems.pdf
 * point light
 * SSAO
 
