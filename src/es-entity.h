@@ -42,7 +42,7 @@ struct _component
   ComponentType type;
   void (*start)   (Component *component);
   void (*update)  (Component *component, int64_t time);
-  void (*draw)    (Component *component);
+  void (*draw)    (Component *component, CoglFramebuffer *fb);
 };
 
 typedef enum
@@ -90,7 +90,8 @@ void                    es_entity_add_component (Entity    *entity,
                                                  Component *component);
 void                    es_entity_update        (Entity  *entity,
                                                  int64_t  time);
-void                    es_entity_draw          (Entity *entity);
+void                    es_entity_draw          (Entity *entity,
+                                                 CoglFramebuffer *fb);
 void                    es_entity_translate     (Entity *entity,
                                                  float   tx,
                                                  float   tz,

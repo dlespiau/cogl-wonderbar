@@ -129,7 +129,8 @@ es_entity_update (Entity  *entity,
 }
 
 void
-es_entity_draw (Entity *entity)
+es_entity_draw (Entity          *entity,
+                CoglFramebuffer *fb)
 {
   int i;
 
@@ -138,7 +139,7 @@ es_entity_draw (Entity *entity)
       Component *component = g_ptr_array_index (entity->components, i);
 
       if (component->draw)
-        component->draw(component);
+        component->draw(component, fb);
     }
 }
 

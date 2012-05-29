@@ -79,7 +79,8 @@ draw_entities (Cube *cube,
       transform = es_entity_get_transform (entity);
 
       cogl_framebuffer_transform (fb, transform);
-      es_entity_draw (entity);
+
+      es_entity_draw (entity, fb);
 
       cogl_framebuffer_pop_matrix (fb);
     }

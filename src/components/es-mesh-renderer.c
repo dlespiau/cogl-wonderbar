@@ -238,12 +238,9 @@ create_ply_primitive (const gchar *filename)
 }
 
 static void
-es_mesh_renderer_draw (Component *component)
+es_mesh_renderer_draw (Component *component, CoglFramebuffer *fb)
 {
   MeshRenderer *renderer = ES_MESH_RENDERER (component);
-  CoglFramebuffer *fb;
-
-  fb = es_get_draw_framebuffer ();
 
   if (renderer->primitive)
     {
