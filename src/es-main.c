@@ -44,6 +44,9 @@ typedef struct
 
   CoglPipeline *shadow_color_tex;
   CoglPipeline *shadow_map_tex;
+
+  /* debug */
+  CoglTexture *uv_debug;
 } Cube;
 
 static Cube cube;
@@ -492,6 +495,15 @@ main (int argc, char **argv)
   /* timer for the world time */
   timer = g_timer_new ();
 
+  /* load the debug uv grid */
+  cube.uv_debug = cogl_texture_new_from_file ("uvgrid.jpg",
+                                              COGL_TEXTURE_NO_ATLAS |
+                                              COGL_TEXTURE_NO_SLICING,
+                                              COGL_PIXEL_FORMAT_ANY,
+                                              &error);
+  if (error)
+    g_warning ("Could not load uv debug texture: %s", error->message);
+
   /*
    * Setup shadow mapping
    */
@@ -538,6 +550,8 @@ main (int argc, char **argv)
   /* Hook the shadow sampling */
   pipeline1 = create_diffuse_specular_material ();
   cogl_pipeline_set_layer_texture (pipeline1, 7, cube.shadow_map);
+  /* cogl_pipeline_set_layer_texture (pipeline1, 7, cube.uv_debug); */
+
   cogl_pipeline_set_layer_wrap_mode_s (pipeline1,
                                        7,
                                        COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
