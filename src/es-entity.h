@@ -87,6 +87,8 @@ void                    es_entity_set_y         (Entity *entity,
 float                   es_entity_get_z         (Entity *entity);
 void                    es_entity_set_z         (Entity *entity,
                                                  float   z);
+void                    es_entity_set_position  (Entity *entity,
+                                                 float position[3]);
 const CoglQuaternion *  es_entity_get_rotation  (Entity *entity);
 void                    es_entity_set_rotation  (Entity *entity,
                                                  CoglQuaternion *rotation);

@@ -73,6 +73,15 @@ es_entity_set_z (Entity *entity,
   entity_set_dirty (entity);
 }
 
+void es_entity_set_position (Entity *entity,
+                             float position[3])
+{
+  entity->position.x = position[0];
+  entity->position.y = position[1];
+  entity->position.z = position[2];
+  entity_set_dirty (entity);
+}
+
 const CoglQuaternion *
 es_entity_get_rotation (Entity *entity)
 {
