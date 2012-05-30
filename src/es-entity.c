@@ -119,6 +119,7 @@ void
 es_entity_add_component (Entity    *entity,
                          Component *component)
 {
+  component->entity = entity;
   g_ptr_array_add (entity->components, component);
 }
 

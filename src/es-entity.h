@@ -40,6 +40,7 @@ typedef enum
 struct _component
 {
   ComponentType type;
+  Entity *entity;     /* back pointer to the entity the component belongs to */
   void (*start)   (Component *component);
   void (*update)  (Component *component, int64_t time);
   void (*draw)    (Component *component, CoglFramebuffer *fb);
