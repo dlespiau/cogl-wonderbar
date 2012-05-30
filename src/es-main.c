@@ -474,8 +474,8 @@ main (int argc, char **argv)
   cogl_framebuffer_perspective (COGL_FRAMEBUFFER (cube.fb),
                                 60.f, /* fov */
                                 (float) 800 / 600,  /* aspect ratio */
-                                .1f,  /* near */
-                                100); /* far */
+                                1.1f,  /* near */
+                                100);  /* far */
 
   cogl_onscreen_show (onscreen);
 
@@ -520,9 +520,9 @@ main (int argc, char **argv)
 #endif
     cogl_framebuffer_perspective (COGL_FRAMEBUFFER (cube.shadow_fb),
                                   60.f, /* fov */
-                                  1.0,  /* aspect ratio */
-                                  3.f,  /* near */
-                                  20); /* far */
+                                  1.0f,  /* aspect ratio */
+                                  1.1f,  /* near */
+                                  10.f); /* far */
 
     /* retrieve the depth texture */
     cogl_framebuffer_enable_depth_texture (COGL_FRAMEBUFFER (cube.shadow_fb),
@@ -567,9 +567,9 @@ main (int argc, char **argv)
   cube.light = &cube.entities[0];
   es_entity_init (cube.light);
 
-  vector3[0] = 1.0f;
-  vector3[1] = 1.0f;
-  vector3[2] = 1.0f;
+  vector3[0] = 0.f;
+  vector3[1] = 3.0f;
+  vector3[2] = -0.5f;
   es_entity_set_position (cube.light, vector3);
 
   component = es_light_new();
@@ -597,7 +597,7 @@ main (int argc, char **argv)
   pipeline2 = cogl_pipeline_copy (pipeline1);
   cogl_pipeline_set_color4f (pipeline2, 0.0f, 0.1f, 5.0f, 1.0f);
 
-  component = es_mesh_renderer_new_from_file ("suzanne.ply", pipeline2);
+  component = es_mesh_renderer_new_from_file ("cone.ply", pipeline2);
 
   es_entity_add_component (&cube.entities[2], component);
 
