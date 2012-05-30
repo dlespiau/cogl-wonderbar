@@ -36,6 +36,7 @@ typedef struct
   gboolean quit;
 
   Entity entities[3];
+  Entity *selected_entity;
   Entity *light;
 
   /* shadow mapping */
@@ -375,12 +376,22 @@ handle_event (Cube *cube, SDL_Event *event)
     case SDL_KEYDOWN:
       switch (event->key.keysym.sym)
         {
+        case SDLK_o:
+          g_message ("Object selected");
+          cube->selected_entity = &cube->entities[2];
+          break;
+
+        case SDLK_l:
+          g_message ("Light selected");
+          cube->selected_entity = cube->light;
+          break;
+
         case SDLK_RIGHT:
           {
             float x;
             Entity *entity;
 
-            entity = &cube->entities[2];
+            entity = cube->selected_entity;
             x = es_entity_get_x (entity);
             es_entity_set_x (entity, x + 0.1);
 
@@ -393,7 +404,7 @@ handle_event (Cube *cube, SDL_Event *event)
             float x;
             Entity *entity;
 
-            entity = &cube->entities[2];
+            entity = cube->selected_entity;
             x = es_entity_get_x (entity);
             es_entity_set_x (entity, x - 0.1);
 
@@ -406,7 +417,7 @@ handle_event (Cube *cube, SDL_Event *event)
             float z;
             Entity *entity;
 
-            entity = &cube->entities[2];
+            entity = cube->selected_entity;
             z = es_entity_get_z (entity);
             es_entity_set_z (entity, z - 0.1);
 
@@ -419,7 +430,7 @@ handle_event (Cube *cube, SDL_Event *event)
             float z;
             Entity *entity;
 
-            entity = &cube->entities[2];
+            entity = cube->selected_entity;
             z = es_entity_get_z (entity);
             es_entity_set_z (entity, z + 0.1);
 
@@ -695,6 +706,9 @@ main (int argc, char **argv)
     es_entity_add_component (&cube.entities[2], component);
   }
 #endif
+
+  /* default to selecting the interesting object */
+  cube.selected_entity = &cube.entities[2];
 
   /* create the pipelines to display the shadow color and depth textures */
   cube.shadow_color_tex =
