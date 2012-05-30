@@ -372,6 +372,66 @@ handle_event (Cube *cube, SDL_Event *event)
       }
       break;
 
+    case SDL_KEYDOWN:
+      switch (event->key.keysym.sym)
+        {
+        case SDLK_RIGHT:
+          {
+            float x;
+            Entity *entity;
+
+            entity = &cube->entities[2];
+            x = es_entity_get_x (entity);
+            es_entity_set_x (entity, x + 0.1);
+
+            draw (cube);
+          }
+          break;
+
+        case SDLK_LEFT:
+          {
+            float x;
+            Entity *entity;
+
+            entity = &cube->entities[2];
+            x = es_entity_get_x (entity);
+            es_entity_set_x (entity, x - 0.1);
+
+            draw (cube);
+          }
+          break;
+
+        case SDLK_UP:
+          {
+            float z;
+            Entity *entity;
+
+            entity = &cube->entities[2];
+            z = es_entity_get_z (entity);
+            es_entity_set_z (entity, z - 0.1);
+
+            draw (cube);
+          }
+          break;
+
+        case SDLK_DOWN:
+          {
+            float z;
+            Entity *entity;
+
+            entity = &cube->entities[2];
+            z = es_entity_get_z (entity);
+            es_entity_set_z (entity, z + 0.1);
+
+            draw (cube);
+          }
+          break;
+
+        default:
+          break;
+        }
+      break;
+
     case SDL_QUIT:
       cube->quit = TRUE;
       break;
