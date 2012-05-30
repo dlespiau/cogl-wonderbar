@@ -36,6 +36,7 @@ typedef struct
   gboolean quit;
 
   Entity entities[3];
+  Entity *light;
 
   /* shadow mapping */
   CoglOffscreen *shadow_fb;
@@ -63,6 +64,12 @@ CoglFramebuffer *
 es_get_draw_framebuffer (void)
 {
   return cube.fb;
+}
+
+CoglPipeline *
+es_get_root_pipeline (void)
+{
+  return es_entity_get_pipeline (&cube.entities[1]);
 }
 
 /* in micro seconds  */
@@ -115,7 +122,7 @@ draw_entities (Cube            *cube,
 {
   int i;
 
-  for (i = 0; i < 2; i++)
+  for (i = 1; i < 3; i++)
     {
       const CoglMatrix *transform;
       Entity *entity;
@@ -178,7 +185,7 @@ draw (Cube *cube)
                                  &light_projection,
                                  &light_view);
 
-    pipeline = es_entity_get_pipeline (&cube->entities[0]);
+    pipeline = es_entity_get_pipeline (&cube->entities[1]);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -187,7 +194,7 @@ draw (Cube *cube)
                                       FALSE,
                                       cogl_matrix_get_array (&light_shadow_matrix));
 
-    pipeline = es_entity_get_pipeline (&cube->entities[1]);
+    pipeline = es_entity_get_pipeline (&cube->entities[2]);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -219,7 +226,7 @@ draw (Cube *cube)
   /* update entities */
   time = es_get_current_time ();
 
-  for (i = 0; i < 2; i++)
+  for (i = 0; i < 3; i++)
     {
       Entity *entity = &cube->entities[i];
 
@@ -280,22 +287,10 @@ create_diffuse_specular_material (void)
 
       /* definitions */
       "uniform mat4 light_shadow_matrix;\n"
-      "varying vec3 normal_direction, light_direction, eye_direction;\n"
-      "varying vec4 shadow_coords;\n"
-
-      "struct light\n"
-      "{\n"
-      "  vec4 position;\n"
-      "  vec4 diffuse;\n"
-      "};\n"
-
-      "light light0 = light(\n"
-      "  vec4(3.0, 0.0, 0.0, 0.0),\n"
-      "  vec4(1.0, 0.8, 0.8, 1.0)\n"
-      ");\n",
+      "varying vec3 normal_direction, eye_direction;\n"
+      "varying vec4 shadow_coords;\n",
 
       "normal_direction = normalize(gl_NormalMatrix * cogl_normal_in);\n"
-      "light_direction  = normalize(vec3(light0.position));\n"
       "eye_direction    = -vec3(cogl_modelview_matrix * cogl_position_in);\n"
 
       "shadow_coords = light_shadow_matrix * cogl_position_in;\n"
@@ -316,43 +311,30 @@ create_diffuse_specular_material (void)
 #endif
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
       /* definitions */
-      "varying vec3 normal_direction, light_direction, eye_direction;\n"
-
-      "struct light\n"
-      "{\n"
-      "  vec4 position;\n"
-      "  vec4 ambient;\n"
-      "  vec4 diffuse;\n"
-      "  vec4 specular;\n"
-      "};\n"
-
-      "light light0 = light(\n"
-      "  vec4(3.0, 0.0, 0.0, 0.0),\n"
-      "  vec4(0.2, 0.2, 0.2, 1.0),\n"
-      "  vec4(1.0, 0.8, 0.8, 1.0),\n"
-      "  vec4(0.6, 0.6, 0.6, 1.0)\n"
-      ");\n",
+      "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
+      "uniform vec3 light0_direction;\n"
+      "varying vec3 normal_direction, eye_direction;\n",
 
       /* post */
       NULL);
 
   cogl_snippet_set_replace (snippet,
-      "vec4 final_color = light0.ambient * cogl_color_in;\n"
+      "vec4 final_color = light0_ambient * cogl_color_in;\n"
 
-      " vec3 L = normalize(light_direction);\n"
+      " vec3 L = normalize(light0_direction);\n"
       " vec3 N = normalize(normal_direction);\n"
 
       "float lambert = dot(N, L);\n"
 
       "if (lambert > 0.0)\n"
       "{\n"
-      "  final_color += cogl_color_in * light0.diffuse * lambert;\n"
+      "  final_color += cogl_color_in * light0_diffuse * lambert;\n"
 
       "  vec3 E = normalize(eye_direction);\n"
       "  vec3 R = reflect (-L, N);\n"
       "  float specular = pow (max(dot(R, E), 0.0),\n"
       "                        2.);\n"
-      "  final_color += light0.specular * vec4(.6, .6, .6, 1.0) * specular;\n"
+      "  final_color += light0_specular * vec4(.6, .6, .6, 1.0) * specular;\n"
       "}\n"
 
       "shadow_coords_d = shadow_coords / shadow_coords.w;\n"
@@ -451,6 +433,8 @@ main (int argc, char **argv)
   Component *component;
   CoglPipeline *pipeline1, *pipeline2;
   CoglSnippet *snippet;
+  CoglColor color;
+  float vector3[3];
   SDL_Event event;
 
   memset (&cube, 0, sizeof(Cube));
@@ -576,36 +560,55 @@ main (int argc, char **argv)
    * Setup CoglObjects to render our plane and cube
    */
 
+  /* light */
+  cube.light = &cube.entities[0];
+  es_entity_init (cube.light);
+
+  vector3[0] = 1.0f;
+  vector3[1] = 1.0f;
+  vector3[2] = 1.0f;
+  es_entity_set_position (cube.light, vector3);
+
+  component = es_light_new();
+  cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
+  es_light_set_ambient (ES_LIGHT (component), &color);
+  cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
+  es_light_set_diffuse (ES_LIGHT (component), &color);
+  cogl_color_init_from_4f (&color, .4f, .4f, .4f, 1.f);
+  es_light_set_specular (ES_LIGHT (component), &color);
+
+  es_entity_add_component (cube.light, component);
+
   /* plane */
-  es_entity_init (&cube.entities[0]);
-  es_entity_set_cast_shadow (&cube.entities[0], FALSE);
+  es_entity_init (&cube.entities[1]);
+  es_entity_set_cast_shadow (&cube.entities[1], FALSE);
 
   component = es_mesh_renderer_new_from_template ("plane", pipeline1);
 
-  es_entity_add_component (&cube.entities[0], component);
+  es_entity_add_component (&cube.entities[1], component);
 
   /* a second, more interesting, entity */
-  es_entity_init (&cube.entities[1]);
-  es_entity_set_cast_shadow (&cube.entities[1], TRUE);
+  es_entity_init (&cube.entities[2]);
+  es_entity_set_cast_shadow (&cube.entities[2], TRUE);
 
   pipeline2 = cogl_pipeline_copy (pipeline1);
   cogl_pipeline_set_color4f (pipeline2, 0.0f, 0.1f, 5.0f, 1.0f);
 
   component = es_mesh_renderer_new_from_file ("suzanne.ply", pipeline2);
 
-  es_entity_add_component (&cube.entities[1], component);
+  es_entity_add_component (&cube.entities[2], component);
 
   /* animate the x property of the second entity */
 #if 0
   component = es_animation_clip_new (2000);
   es_animation_clip_add_float (ES_ANIMATION_CLIP (component),
-                               &cube.entities[1],
+                               &cube.entities[2],
                                FLOAT_GETTER (es_entity_get_x),
                                FLOAT_SETTER (es_entity_set_x),
                                5.0f);
   es_animation_clip_start (ES_ANIMATION_CLIP (component));
 
-  es_entity_add_component (&cube.entities[1], component);
+  es_entity_add_component (&cube.entities[2], component);
 #endif
 
   /* animate the rotation of the second entity */
@@ -619,14 +622,14 @@ main (int argc, char **argv)
 
     component = es_animation_clip_new (5000);
     es_animation_clip_add_quaternion (ES_ANIMATION_CLIP (component),
-                                      &cube.entities[1],
+                                      &cube.entities[2],
                                       QUATERNION_GETTER (es_entity_get_rotation),
                                       QUATERNION_SETTER (es_entity_set_rotation),
                                       &end_rotation);
 
     es_animation_clip_start (ES_ANIMATION_CLIP (component));
 
-    es_entity_add_component (&cube.entities[1], component);
+    es_entity_add_component (&cube.entities[2], component);
   }
 #endif
 

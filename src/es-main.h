@@ -33,4 +33,7 @@ es_get_current_time (void);
 CoglFramebuffer *
 es_get_draw_framebuffer (void);
 
+CoglPipeline *
+es_get_root_pipeline (void);
+
 #endif /* __MAIN_H__ */
