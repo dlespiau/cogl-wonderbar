@@ -312,7 +312,7 @@ create_diffuse_specular_material (void)
   snippet = cogl_snippet_new (COGL_SNIPPET_HOOK_FRAGMENT,
       /* definitions */
       "uniform vec4 light0_ambient, light0_diffuse, light0_specular;\n"
-      "uniform vec3 light0_direction;\n"
+      "uniform vec3 light0_direction_norm;\n"
       "varying vec3 normal_direction, eye_direction;\n",
 
       /* post */
@@ -321,7 +321,7 @@ create_diffuse_specular_material (void)
   cogl_snippet_set_replace (snippet,
       "vec4 final_color = light0_ambient * cogl_color_in;\n"
 
-      " vec3 L = normalize(light0_direction);\n"
+      " vec3 L = light0_direction_norm;\n"
       " vec3 N = normalize(normal_direction);\n"
 
       "float lambert = dot(N, L);\n"

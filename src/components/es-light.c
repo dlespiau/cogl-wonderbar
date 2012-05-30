@@ -54,7 +54,7 @@ es_light_update (Component *component,
   cogl_vector3_normalize (norm_direction);
 
   location = cogl_pipeline_get_uniform_location (pipeline,
-                                                 "light0_direction");
+                                                 "light0_direction_norm");
   cogl_pipeline_set_uniform_float (pipeline,
                                    location,
                                    3, 1,
