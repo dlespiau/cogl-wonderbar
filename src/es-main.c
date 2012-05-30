@@ -166,7 +166,10 @@ draw (Cube *cube)
   /* the light position is hardcoded for now */
   cogl_matrix_init_identity (&shadow_transform);
   cogl_matrix_look_at (&shadow_transform,
-                       2., 3.f, -10.f,    /* light position */
+                       /* light position */
+                       es_entity_get_x (cube->light),
+                       es_entity_get_y (cube->light),
+                       es_entity_get_z (cube->light),
                        .0f, 0.f, 0.f,     /* direction to look at */
                        .0f, 1.f, 0.f);    /* world up */
 
