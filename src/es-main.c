@@ -30,13 +30,17 @@
 #define COGL_VERSION_CHECK(a,b,c) (FALSE)
 #endif
 
+#define USER_ENTITY 2
+#define N_ENTITIES  4
+
 typedef struct
 {
   CoglFramebuffer *fb;
   gboolean quit;
 
-  Entity entities[3];
+  Entity entities[N_ENTITIES];
   Entity *selected_entity;
+  Entity *main_camera;
   Entity *light;
 
   /* shadow mapping */
@@ -64,7 +68,7 @@ es_get_cogl_context (void)
 CoglPipeline *
 es_get_root_pipeline (void)
 {
-  return es_entity_get_pipeline (&cube.entities[1]);
+  return es_entity_get_pipeline (&cube.entities[USER_ENTITY]);
 }
 
 /* in micro seconds  */
@@ -97,7 +101,7 @@ compute_light_shadow_matrix (CoglMatrix *light_matrix,
                              CoglMatrix *light_projection,
                              CoglMatrix *light_view)
 {
-  /* Move the unit cube from [-1,1] to [0,1] */
+  /* Move the unit cube from [-1,1] to [0,1], column major order */
   float bias[16] = {
     .5f, .0f, .0f, .0f,
     .0f, .5f, .0f, .0f,
@@ -113,13 +117,19 @@ compute_light_shadow_matrix (CoglMatrix *light_matrix,
 static void
 draw_entities (Cube            *cube,
                CoglFramebuffer *fb,
+               Entity          *camera,
                gboolean         shadow_pass)
 {
+  CoglMatrix *transform, inverse;
   int i;
 
-  for (i = 1; i < 3; i++)
+  transform = es_entity_get_transform (camera);
+  cogl_matrix_get_inverse (transform, &inverse);
+  cogl_framebuffer_set_modelview_matrix (fb, &inverse);
+  es_entity_draw (camera, fb);
+
+  for (i = 1; i < N_ENTITIES; i++)
     {
-      const CoglMatrix *transform;
       Entity *entity;
 
       entity = &cube->entities[i];
@@ -143,32 +153,26 @@ draw (Cube *cube)
 {
   int i;
   int64_t time; /* micro seconds */
-  CoglMatrix shadow_transform;
   CoglFramebuffer *shadow_fb;
+
+  /*
+   * update entities
+   */
+
+  time = es_get_current_time ();
+
+  for (i = 0; i < N_ENTITIES; i++)
+    {
+      Entity *entity = &cube->entities[i];
+
+      es_entity_update (entity, time);
+    }
 
   /*
    * render the shadow map
    */
 
   shadow_fb = COGL_FRAMEBUFFER (cube->shadow_fb);
-
-  cogl_push_framebuffer (shadow_fb);
-
-  cogl_framebuffer_clear4f (shadow_fb,
-                            COGL_BUFFER_BIT_COLOR | COGL_BUFFER_BIT_DEPTH,
-                            0, 1, 0, 1);
-
-  /* the light position is hardcoded for now */
-  cogl_matrix_init_identity (&shadow_transform);
-  cogl_matrix_look_at (&shadow_transform,
-                       /* light position */
-                       es_entity_get_x (cube->light),
-                       es_entity_get_y (cube->light),
-                       es_entity_get_z (cube->light),
-                       .0f, 0.f, 0.f,     /* direction to look at */
-                       .0f, 1.f, 0.f);    /* world up */
-
-  cogl_framebuffer_set_modelview_matrix (shadow_fb, &shadow_transform);
 
   /* update the light matrix uniform */
   {
@@ -183,7 +187,7 @@ draw (Cube *cube)
                                  &light_projection,
                                  &light_view);
 
-    pipeline = es_entity_get_pipeline (&cube->entities[1]);
+    pipeline = es_entity_get_pipeline (&cube->entities[USER_ENTITY]);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -192,7 +196,7 @@ draw (Cube *cube)
                                       FALSE,
                                       cogl_matrix_get_array (&light_shadow_matrix));
 
-    pipeline = es_entity_get_pipeline (&cube->entities[2]);
+    pipeline = es_entity_get_pipeline (&cube->entities[USER_ENTITY + 1]);
     location = cogl_pipeline_get_uniform_location (pipeline,
                                                    "light_shadow_matrix");
     cogl_pipeline_set_uniform_matrix (pipeline,
@@ -202,37 +206,18 @@ draw (Cube *cube)
                                       cogl_matrix_get_array (&light_shadow_matrix));
   }
 
-  draw_entities (cube, shadow_fb, TRUE /* shadow pass */);
-
-  cogl_pop_framebuffer ();
+  draw_entities (cube, shadow_fb, cube->light, TRUE /* shadow pass */);
 
   /*
    * render the scene
    */
 
-  /* setup the base tranformation matrix, we use clutter so the transformation
-   * is relative to the default one in clutter */
-
-  cogl_framebuffer_clear4f (cube->fb,
-                            COGL_BUFFER_BIT_COLOR|COGL_BUFFER_BIT_DEPTH,
-                            0, 0, 0, 1);
-
   cogl_framebuffer_push_matrix (cube->fb);
 
-  cogl_framebuffer_translate (cube->fb, 0.f, 0.f, -10.f);
-
-  /* update entities */
-  time = es_get_current_time ();
-
-  for (i = 0; i < 3; i++)
-    {
-      Entity *entity = &cube->entities[i];
-
-      es_entity_update (entity, time);
-    }
+  //cogl_framebuffer_translate (cube->fb, 0.f, 0.f, -10.f);
 
   /* draw entities */
-  draw_entities (cube, cube->fb, FALSE /* shadow pass */);
+  draw_entities (cube, cube->fb, cube->main_camera, FALSE /* shadow pass */);
 
   /* draw the color and depth buffers of the shadow FBO to debug them */
   cogl_framebuffer_draw_rectangle (cube->fb, cube->shadow_color_tex,
@@ -361,18 +346,12 @@ handle_event (Cube *cube, SDL_Event *event)
       draw (cube);
       break;
 
-    case SDL_MOUSEMOTION:
-      {
-        g_message ("motion %dx%d", event->motion.x, event->motion.y);
-      }
-      break;
-
     case SDL_KEYDOWN:
       switch (event->key.keysym.sym)
         {
         case SDLK_o:
           g_message ("Object selected");
-          cube->selected_entity = &cube->entities[2];
+          cube->selected_entity = &cube->entities[USER_ENTITY + 1];
           break;
 
         case SDLK_l:
@@ -499,7 +478,7 @@ main (int argc, char **argv)
   CoglOnscreen *onscreen;
   GError *error = NULL;
   Component *component;
-  CoglPipeline *pipeline1, *pipeline2;
+  CoglPipeline *root_pipeline, *pipeline;
   CoglSnippet *snippet;
   CoglColor color;
   float vector3[3];
@@ -536,11 +515,6 @@ main (int argc, char **argv)
 
   onscreen = cogl_onscreen_new (context, 800, 600);
   cube.fb = COGL_FRAMEBUFFER (onscreen);
-  cogl_framebuffer_perspective (COGL_FRAMEBUFFER (cube.fb),
-                                60.f, /* fov */
-                                (float) 800 / 600,  /* aspect ratio */
-                                1.1f,  /* near */
-                                100);  /* far */
 
   cogl_onscreen_show (onscreen);
 
@@ -577,18 +551,6 @@ main (int argc, char **argv)
     cube.shadow_fb =
         cogl_offscreen_new_to_texture (COGL_TEXTURE (color_buffer));
 
-    /* directional light -> orthographic perspective */
-#if 0
-    cogl_framebuffer_orthographic (COGL_FRAMEBUFFER (cube.shadow_fb),
-                                   10.f, 10.f, -10.f, -10.f, -15.f, 15.f);
-
-#endif
-    cogl_framebuffer_perspective (COGL_FRAMEBUFFER (cube.shadow_fb),
-                                  60.f, /* fov */
-                                  1.0f,  /* aspect ratio */
-                                  1.1f,  /* near */
-                                  10.f); /* far */
-
     /* retrieve the depth texture */
     cogl_framebuffer_enable_depth_texture (COGL_FRAMEBUFFER (cube.shadow_fb),
                                            TRUE);
@@ -600,14 +562,14 @@ main (int argc, char **argv)
   }
 
   /* Hook the shadow sampling */
-  pipeline1 = create_diffuse_specular_material ();
-  cogl_pipeline_set_layer_texture (pipeline1, 7, cube.shadow_map);
-  /* cogl_pipeline_set_layer_texture (pipeline1, 7, cube.uv_debug); */
+  root_pipeline = create_diffuse_specular_material ();
+  cogl_pipeline_set_layer_texture (root_pipeline, 7, cube.shadow_map);
+  /* cogl_pipeline_set_layer_texture (root_pipeline, 7, cube.uv_debug); */
 
-  cogl_pipeline_set_layer_wrap_mode_s (pipeline1,
+  cogl_pipeline_set_layer_wrap_mode_s (root_pipeline,
                                        7,
                                        COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
-  cogl_pipeline_set_layer_wrap_mode_t (pipeline1,
+  cogl_pipeline_set_layer_wrap_mode_t (root_pipeline,
                                        7,
                                        COGL_PIPELINE_WRAP_MODE_CLAMP_TO_EDGE);
 
@@ -621,23 +583,41 @@ main (int argc, char **argv)
   cogl_snippet_set_replace (snippet,
                             "cogl_texel = texture2D(cogl_sampler7, shadow_coords_d.st);\n");
 
-  cogl_pipeline_add_layer_snippet (pipeline1, 7, snippet);
+  cogl_pipeline_add_layer_snippet (root_pipeline, 7, snippet);
   cogl_object_unref (snippet);
 
   /*
    * Setup CoglObjects to render our plane and cube
    */
 
+  /* camera */
+  cube.main_camera = &cube.entities[0];
+  es_entity_init (cube.main_camera);
+
+  vector3[0] = 0.f;
+  vector3[1] = 0.f;
+  vector3[2] = 10.f;
+  es_entity_set_position (cube.main_camera, vector3);
+
+  component = es_camera_new ();
+
+  es_camera_set_framebuffer (ES_CAMERA (component), cube.fb);
+  es_camera_set_field_of_view (ES_CAMERA (component), 60.f);
+  es_camera_set_near_plane (ES_CAMERA (component), 1.1f);
+  es_camera_set_far_plane (ES_CAMERA (component), 100.f);
+
+  es_entity_add_component (cube.main_camera, component);
+
   /* light */
-  cube.light = &cube.entities[0];
+  cube.light = &cube.entities[1];
   es_entity_init (cube.light);
 
   vector3[0] = 0.f;
-  vector3[1] = 3.0f;
-  vector3[2] = -0.5f;
+  vector3[1] = .0f;
+  vector3[2] = 5.0f;
   es_entity_set_position (cube.light, vector3);
 
-  component = es_light_new();
+  component = es_light_new ();
   cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
   es_light_set_ambient (ES_LIGHT (component), &color);
   cogl_color_init_from_4f (&color, .6f, .6f, .6f, 1.f);
@@ -647,36 +627,57 @@ main (int argc, char **argv)
 
   es_entity_add_component (cube.light, component);
 
+  pipeline = cogl_pipeline_copy (root_pipeline);
+  cogl_pipeline_set_color4f (pipeline, 1.0f, 0.0f, 0.0f, 1.0f);
+  component = es_mesh_renderer_new_from_file ("cone.ply", pipeline);
+  cogl_object_unref (pipeline);
+
+  es_entity_add_component (cube.light, component);
+
+  component = es_camera_new ();
+
+  cogl_color_init_from_4f (&color, 0.f, .3f, 0.f, 1.f);
+  es_camera_set_background_color (ES_CAMERA (component), &color);
+  es_camera_set_framebuffer (ES_CAMERA (component),
+                             COGL_FRAMEBUFFER (cube.shadow_fb));
+  es_camera_set_field_of_view (ES_CAMERA (component), 60.f);
+  es_camera_set_near_plane (ES_CAMERA (component), 1.1f);
+  es_camera_set_far_plane (ES_CAMERA (component), 10.f);
+
+  es_entity_add_component (cube.light, component);
+
+
   /* plane */
-  es_entity_init (&cube.entities[1]);
-  es_entity_set_cast_shadow (&cube.entities[1], FALSE);
+  es_entity_init (&cube.entities[USER_ENTITY]);
+  es_entity_set_cast_shadow (&cube.entities[USER_ENTITY], FALSE);
 
-  component = es_mesh_renderer_new_from_template ("plane", pipeline1);
+  component = es_mesh_renderer_new_from_template ("plane", root_pipeline);
 
-  es_entity_add_component (&cube.entities[1], component);
+  es_entity_add_component (&cube.entities[USER_ENTITY], component);
 
   /* a second, more interesting, entity */
-  es_entity_init (&cube.entities[2]);
-  es_entity_set_cast_shadow (&cube.entities[2], TRUE);
+  es_entity_init (&cube.entities[USER_ENTITY + 1]);
+  es_entity_set_cast_shadow (&cube.entities[USER_ENTITY + 1], TRUE);
 
-  pipeline2 = cogl_pipeline_copy (pipeline1);
-  cogl_pipeline_set_color4f (pipeline2, 0.0f, 0.1f, 5.0f, 1.0f);
+  pipeline = cogl_pipeline_copy (root_pipeline);
+  cogl_pipeline_set_color4f (pipeline, 0.0f, 0.1f, 5.0f, 1.0f);
 
-  component = es_mesh_renderer_new_from_file ("cone.ply", pipeline2);
+  component = es_mesh_renderer_new_from_file ("cone.ply", pipeline);
+  cogl_object_unref (pipeline);
 
-  es_entity_add_component (&cube.entities[2], component);
+  es_entity_add_component (&cube.entities[USER_ENTITY + 1], component);
 
   /* animate the x property of the second entity */
 #if 0
   component = es_animation_clip_new (2000);
   es_animation_clip_add_float (ES_ANIMATION_CLIP (component),
-                               &cube.entities[2],
+                               &cube.entities[USER_ENTITY + 1],
                                FLOAT_GETTER (es_entity_get_x),
                                FLOAT_SETTER (es_entity_set_x),
                                5.0f);
   es_animation_clip_start (ES_ANIMATION_CLIP (component));
 
-  es_entity_add_component (&cube.entities[2], component);
+  es_entity_add_component (&cube.entities[USER_ENTITY + 1], component);
 #endif
 
   /* animate the rotation of the second entity */
@@ -690,19 +691,19 @@ main (int argc, char **argv)
 
     component = es_animation_clip_new (5000);
     es_animation_clip_add_quaternion (ES_ANIMATION_CLIP (component),
-                                      &cube.entities[2],
+                                      &cube.entities[USER_ENTITY + 1],
                                       QUATERNION_GETTER (es_entity_get_rotation),
                                       QUATERNION_SETTER (es_entity_set_rotation),
                                       &end_rotation);
 
     es_animation_clip_start (ES_ANIMATION_CLIP (component));
 
-    es_entity_add_component (&cube.entities[2], component);
+    es_entity_add_component (&cube.entities[USER_ENTITY + 1], component);
   }
 #endif
 
   /* default to selecting the interesting object */
-  cube.selected_entity = &cube.entities[2];
+  cube.selected_entity = &cube.entities[USER_ENTITY + 1];
 
   /* create the pipelines to display the shadow color and depth textures */
   cube.shadow_color_tex =
@@ -710,8 +711,7 @@ main (int argc, char **argv)
   cube.shadow_map_tex =
       create_texture_pipeline (COGL_TEXTURE (cube.shadow_map));
 
-  cogl_object_unref (pipeline1);
-  cogl_object_unref (pipeline2);
+  cogl_object_unref (root_pipeline);
 
   g_timer_start (timer);
 

@@ -24,6 +24,8 @@ wonderbar_SOURCES = 			\
 	mash-ply-loader.h		\
 	components/es-animation-clip.c	\
 	components/es-animation-clip.h	\
+	components/es-camera.c		\
+	components/es-camera.h		\
 	components/es-light.c		\
 	components/es-light.h		\
 	components/es-mesh-renderer.c	\
