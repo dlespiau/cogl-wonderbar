@@ -90,10 +90,10 @@ void                    es_entity_set_z         (Entity *entity,
                                                  float   z);
 void                    es_entity_set_position  (Entity *entity,
                                                  float position[3]);
-const CoglQuaternion *  es_entity_get_rotation  (Entity *entity);
+CoglQuaternion *        es_entity_get_rotation  (Entity *entity);
 void                    es_entity_set_rotation  (Entity *entity,
                                                  CoglQuaternion *rotation);
-const CoglMatrix *      es_entity_get_transform (Entity *entity);
+CoglMatrix *            es_entity_get_transform (Entity *entity);
 void                    es_entity_add_component (Entity    *entity,
                                                  Component *component);
 void                    es_entity_update        (Entity  *entity,

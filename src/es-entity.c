@@ -82,7 +82,7 @@ void es_entity_set_position (Entity *entity,
   entity_set_dirty (entity);
 }
 
-const CoglQuaternion *
+CoglQuaternion *
 es_entity_get_rotation (Entity *entity)
 {
   return &entity->rotation;
@@ -95,7 +95,7 @@ void es_entity_set_rotation (Entity *entity,
   entity_set_dirty (entity);
 }
 
-const CoglMatrix *
+CoglMatrix *
 es_entity_get_transform (Entity *entity)
 {
   CoglMatrix translation;
