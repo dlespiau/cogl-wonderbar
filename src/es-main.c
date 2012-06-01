@@ -61,12 +61,6 @@ es_get_cogl_context (void)
   return context;
 }
 
-CoglFramebuffer *
-es_get_draw_framebuffer (void)
-{
-  return cube.fb;
-}
-
 CoglPipeline *
 es_get_root_pipeline (void)
 {
