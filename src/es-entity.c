@@ -98,17 +98,17 @@ void es_entity_set_rotation (Entity *entity,
 CoglMatrix *
 es_entity_get_transform (Entity *entity)
 {
-  CoglMatrix translation;
+  CoglMatrix rotation;
 
   if (!entity_is_dirty (entity))
     return &entity->transform;
 
-  cogl_matrix_init_translation (&translation,
+  cogl_matrix_init_translation (&entity->transform,
                                 entity->position.x,
                                 entity->position.y,
                                 entity->position.z);
-  cogl_matrix_init_from_quaternion (&entity->transform, &entity->rotation);
-  cogl_matrix_multiply (&entity->transform, &entity->transform, &translation);
+  cogl_matrix_init_from_quaternion (&rotation, &entity->rotation);
+  cogl_matrix_multiply (&entity->transform, &entity->transform, &rotation);
 
   entity_clear_dirty (entity);
 
