@@ -235,3 +235,20 @@ void es_entity_set_cast_shadow (Entity   *entity,
   else
     ENTITY_CLEAR_FLAG (entity, CAST_SHADOW);
 }
+
+Component *
+es_entity_get_component (Entity        *entity,
+                         ComponentType  type)
+{
+  int i;
+
+  for (i = 0; i < entity->components->len; i++)
+    {
+      Component *component = g_ptr_array_index (entity->components, i);
+
+      if (component->type == type)
+        return component;
+    }
+
+    return NULL;
+}

@@ -114,6 +114,8 @@ void                    es_entity_rotate_z_axis (Entity *entity,
                                                  float   z_angle);
 
 CoglPipeline *          es_entity_get_pipeline  (Entity *entity);
+Component *             es_entity_get_component (Entity        *entity,
+                                                 ComponentType  type);
 
 void                    es_entity_set_cast_shadow (Entity   *entity,
                                                    gboolean  cast_shadow);
