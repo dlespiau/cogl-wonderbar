@@ -48,9 +48,9 @@ struct _component
 
 typedef enum
 {
-  ENTITY_FLAG_NONE,
-  ENTITY_FLAG_DIRTY,
-  ENTITY_FLAG_CAST_SHADOW
+  ENTITY_FLAG_NONE        = 0,
+  ENTITY_FLAG_DIRTY       = 1 << 0,
+  ENTITY_FLAG_CAST_SHADOW = 1 << 1,
 } EntityFlag;
 
 #define ENTITY_HAS_FLAG(entity,flag)    ((entity)->flags & ENTITY_FLAG_##flag)

@@ -42,8 +42,8 @@ typedef struct _AnimationClip AnimationClip;
 
 typedef enum
 {
-  ANIMATION_CLIP_FLAG_NONE,
-  ANIMATION_CLIP_FLAG_STARTED
+  ANIMATION_CLIP_FLAG_NONE    = 0,
+  ANIMATION_CLIP_FLAG_STARTED = 1 << 0
 } AnimationClipFlag;
 
 #define ANIMATION_CLIP_HAS_FLAG(clip,flag)    \
