@@ -108,6 +108,10 @@ void                    es_entity_translate     (Entity *entity,
                                                  float   ty);
 void                    es_entity_rotate_x_axis (Entity *entity,
                                                  float   x_angle);
+void                    es_entity_rotate_y_axis (Entity *entity,
+                                                 float   y_angle);
+void                    es_entity_rotate_z_axis (Entity *entity,
+                                                 float   z_angle);
 
 CoglPipeline *          es_entity_get_pipeline  (Entity *entity);
 

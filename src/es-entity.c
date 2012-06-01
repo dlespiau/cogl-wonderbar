@@ -181,6 +181,36 @@ es_entity_rotate_x_axis (Entity *entity,
   entity_set_dirty (entity);
 }
 
+void
+es_entity_rotate_y_axis (Entity *entity,
+                         float   y_angle)
+{
+  CoglQuaternion y_rotation, *current;
+
+  /* XXX: avoid the allocation here, and/or make the muliplication in place */
+  current = cogl_quaternion_copy (&entity->rotation);
+  cogl_quaternion_init_from_y_rotation (&y_rotation, y_angle);
+  cogl_quaternion_multiply (&entity->rotation, current, &y_rotation);
+  cogl_quaternion_free (current);
+
+  entity_set_dirty (entity);
+}
+
+void
+es_entity_rotate_z_axis (Entity *entity,
+                         float   z_angle)
+{
+  CoglQuaternion z_rotation, *current;
+
+  /* XXX: avoid the allocation here, and/or make the muliplication in place */
+  current = cogl_quaternion_copy (&entity->rotation);
+  cogl_quaternion_init_from_z_rotation (&z_rotation, z_angle);
+  cogl_quaternion_multiply (&entity->rotation, current, &z_rotation);
+  cogl_quaternion_free (current);
+
+  entity_set_dirty (entity);
+}
+
 CoglPipeline *
 es_entity_get_pipeline (Entity *entity)
 {
