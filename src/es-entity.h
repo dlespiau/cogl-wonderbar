@@ -32,6 +32,7 @@ typedef struct _entity    Entity;
 typedef enum
 {
   ES_COMPONENT_TYPE_ANIMATION_CLIP,
+  ES_COMPONENT_TYPE_LIGHT,
   ES_COMPONENT_TYPE_MESH_RENDERER,
 
   ES_N_COMPNONENTS

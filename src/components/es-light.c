@@ -89,6 +89,7 @@ es_light_new (void)
   Light *light;
 
   light = g_slice_new0 (Light);
+  light->component.type = ES_COMPONENT_TYPE_LIGHT;
   light->component.update = es_light_update;
   cogl_color_init_from_4f (&light->ambient, 1.0, 1.0, 1.0, 1.0);
   cogl_color_init_from_4f (&light->diffuse, 1.0, 1.0, 1.0, 1.0);
