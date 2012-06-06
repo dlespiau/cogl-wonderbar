@@ -214,8 +214,6 @@ draw (Cube *cube)
 
   cogl_framebuffer_push_matrix (cube->fb);
 
-  //cogl_framebuffer_translate (cube->fb, 0.f, 0.f, -10.f);
-
   /* draw entities */
   draw_entities (cube, cube->fb, cube->main_camera, FALSE /* shadow pass */);
 
