@@ -359,6 +359,11 @@ handle_event (Cube *cube, SDL_Event *event)
           cube->selected_entity = cube->light;
           break;
 
+        case SDLK_c:
+          g_message ("Camera selected");
+          cube->selected_entity = cube->main_camera;
+          break;
+
         case SDLK_RIGHT:
           {
             float x;
