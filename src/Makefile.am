@@ -16,6 +16,8 @@ wonderbar_SOURCES = 			\
 	es-main.h			\
 	es-entity.c			\
 	es-entity.h			\
+	es-util.c			\
+	es-util.h			\
 	mash-data-loader.c		\
 	mash-data-loader.h		\
 	mash-data.c			\
