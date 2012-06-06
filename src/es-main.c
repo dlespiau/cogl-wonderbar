@@ -630,13 +630,6 @@ main (int argc, char **argv)
 
   es_entity_add_component (cube.light, component);
 
-  pipeline = cogl_pipeline_copy (root_pipeline);
-  cogl_pipeline_set_color4f (pipeline, 1.0f, 0.0f, 0.0f, 1.0f);
-  component = es_mesh_renderer_new_from_file ("cone.ply", pipeline);
-  cogl_object_unref (pipeline);
-
-  es_entity_add_component (cube.light, component);
-
   component = es_camera_new ();
 
   cogl_color_init_from_4f (&color, 0.f, .3f, 0.f, 1.f);
