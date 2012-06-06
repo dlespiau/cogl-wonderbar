@@ -51,7 +51,7 @@ es_camera_update (Component *component,
         {
           float aspect_ratio;
 
-          aspect_ratio = cogl_framebuffer_get_width (camera->fb) /
+          aspect_ratio = (float) cogl_framebuffer_get_width (camera->fb) /
                          cogl_framebuffer_get_height (camera->fb);
 
           cogl_framebuffer_perspective (camera->fb,
