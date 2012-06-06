@@ -615,10 +615,12 @@ main (int argc, char **argv)
   cube.light = &cube.entities[1];
   es_entity_init (cube.light);
 
-  vector3[0] = 0.f;
-  vector3[1] = .0f;
-  vector3[2] = 5.0f;
+  vector3[0] = 0.0f;
+  vector3[1] = 5.0f;
+  vector3[2] = 0.0f;
   es_entity_set_position (cube.light, vector3);
+
+  es_entity_rotate_x_axis (cube.light, -90);
 
   component = es_light_new ();
   cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
