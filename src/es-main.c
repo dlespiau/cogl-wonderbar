@@ -185,13 +185,15 @@ draw (Cube *cube)
 
   /* update the light matrix uniform */
   {
-    CoglMatrix light_shadow_matrix, light_projection, light_view;
+    CoglMatrix light_shadow_matrix, light_projection, *light_transform,
+               light_view;
     CoglPipeline *pipeline;
 
     int location;
 
     cogl_framebuffer_get_projection_matrix (shadow_fb, &light_projection);
-    cogl_framebuffer_get_modelview_matrix (shadow_fb, &light_view);
+    light_transform = es_entity_get_transform (cube->light);
+    cogl_matrix_get_inverse (light_transform, &light_view);
     compute_light_shadow_matrix (&light_shadow_matrix,
                                  &light_projection,
                                  &light_view);
