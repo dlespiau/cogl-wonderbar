@@ -631,7 +631,8 @@ main (int argc, char **argv)
   vector3[2] = -2.0f;
   es_entity_set_position (cube.light, vector3);
 
-  es_entity_rotate_x_axis (cube.light, -90);
+  es_entity_rotate_x_axis (cube.light, -120);
+  es_entity_rotate_y_axis (cube.light, 10);
 
   component = es_light_new ();
   cogl_color_init_from_4f (&color, .2f, .2f, .2f, 1.f);
@@ -649,9 +650,10 @@ main (int argc, char **argv)
   es_camera_set_background_color (ES_CAMERA (component), &color);
   es_camera_set_framebuffer (ES_CAMERA (component),
                              COGL_FRAMEBUFFER (cube.shadow_fb));
-  es_camera_set_field_of_view (ES_CAMERA (component), 60.f);
+  es_camera_set_projection (ES_CAMERA (component), ES_PROJECTION_ORTHOGRAPHIC);
+  es_camera_set_size_of_view (ES_CAMERA (component), 3);
   es_camera_set_near_plane (ES_CAMERA (component), 1.1f);
-  es_camera_set_far_plane (ES_CAMERA (component), 10.f);
+  es_camera_set_far_plane (ES_CAMERA (component), 20.f);
 
   es_entity_add_component (cube.light, component);
 
