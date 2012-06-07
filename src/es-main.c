@@ -671,7 +671,7 @@ main (int argc, char **argv)
   pipeline = cogl_pipeline_copy (root_pipeline);
   cogl_pipeline_set_color4f (pipeline, 0.0f, 0.1f, 5.0f, 1.0f);
 
-  component = es_mesh_renderer_new_from_file ("cone.ply", pipeline);
+  component = es_mesh_renderer_new_from_template ("cube", pipeline);
   cogl_object_unref (pipeline);
 
   es_entity_add_component (&cube.entities[USER_ENTITY + 1], component);
