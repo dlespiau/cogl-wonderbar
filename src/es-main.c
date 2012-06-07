@@ -125,7 +125,16 @@ draw_entities (Cube            *cube,
 
   transform = es_entity_get_transform (camera);
   cogl_matrix_get_inverse (transform, &inverse);
-  cogl_framebuffer_set_modelview_matrix (fb, &inverse);
+  if (shadow_pass)
+    {
+      cogl_framebuffer_identity_matrix (fb);
+      cogl_framebuffer_scale (fb, 1, -1, 1);
+      cogl_framebuffer_transform (fb, &inverse);
+    }
+  else
+    {
+      cogl_framebuffer_set_modelview_matrix (fb, &inverse);
+    }
   es_entity_draw (camera, fb);
 
   for (i = 1; i < N_ENTITIES; i++)
@@ -219,9 +228,9 @@ draw (Cube *cube)
 
   /* draw the color and depth buffers of the shadow FBO to debug them */
   cogl_framebuffer_draw_rectangle (cube->fb, cube->shadow_color_tex,
-                                   -4, 3, -2, 1);
+                                   -2, 1, -4, 3);
   cogl_framebuffer_draw_rectangle (cube->fb, cube->shadow_map_tex,
-                                   -4, 1, -2, -1);
+                                   -2, -1, -4, 1);
 
   cogl_framebuffer_pop_matrix (cube->fb);
 
