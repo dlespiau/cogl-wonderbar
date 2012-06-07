@@ -331,7 +331,7 @@ create_diffuse_specular_material (void)
 
       "shadow_coords_d = shadow_coords / shadow_coords.w;\n"
       "cogl_texel7 =  cogl_texture_lookup7 (cogl_sampler7, cogl_tex_coord_in[0]);\n"
-      "float distance_from_light = cogl_texel7.z;\n"
+      "float distance_from_light = cogl_texel7.z + 0.005;\n"
       "float shadow = 1.0;\n"
       "if (shadow_coords.w > 0.0 && distance_from_light < shadow_coords_d.z)\n"
       "    shadow = 0.5;\n"
