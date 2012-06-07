@@ -609,7 +609,7 @@ main (int argc, char **argv)
   es_entity_init (cube.main_camera);
 
   vector3[0] = 0.f;
-  vector3[1] = 0.f;
+  vector3[1] = 2.f;
   vector3[2] = 10.f;
   es_entity_set_position (cube.main_camera, vector3);
 
@@ -626,9 +626,9 @@ main (int argc, char **argv)
   cube.light = &cube.entities[1];
   es_entity_init (cube.light);
 
-  vector3[0] = 0.0f;
-  vector3[1] = 5.0f;
-  vector3[2] = 0.0f;
+  vector3[0] = 1.0f;
+  vector3[1] = 8.0f;
+  vector3[2] = -2.0f;
   es_entity_set_position (cube.light, vector3);
 
   es_entity_rotate_x_axis (cube.light, -90);
